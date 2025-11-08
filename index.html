@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nursing CPD Management Portal - Nizwa Hospital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+    <style>
+        /* Custom CSS */
+        .header-bg {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 0;
+        }
+        .sidebar {
+            height: 100vh;
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+        }
+        .main-content {
+            padding: 20px;
+            margin-left: 16.66667%;
+        }
+        .card-cpd {
+            border-left: 5px solid #28a745;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-cpd:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .nav-link {
+            color: #333;
+            transition: background-color 0.2s;
+        }
+        .nav-link:hover {
+            background-color: #e9ecef;
+            color: #007bff;
+        }
+        .nav-link.active {
+            background-color: #007bff;
+            color: white;
+        }
+        section {
+            display: none;
+        }
+        section.active {
+            display: block;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: relative;
+                height: auto;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid">
+        <div class="row">
+
+            <!-- Sidebar Navigation -->
+            <nav id="sidebar" class="col-md-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <h5 class="text-center mb-4 text-primary">
+                        <i class="fas fa-hospital-user"></i> CPD Navigation
+                    </h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" data-section="main-page">
+                                <i class="fas fa-home me-2"></i> Main Page
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-section="dashboard">
+                                <i class="fas fa-chart-line me-2"></i> Dashboard (KPI)
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-section="calendar">
+                                <i class="fas fa-calendar-alt me-2"></i> Calendar
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-section="registration">
+                                <i class="fas fa-user-plus me-2"></i> New Registration
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-section="leaders">
+                                <i class="fas fa-users me-2"></i> Board of Leaders
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-section="announcements">
+                                <i class="fas fa-bullhorn me-2"></i> Announcements
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-10 ms-sm-auto main-content">
+
+                <!-- Header -->
+                <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom header-bg rounded shadow-sm">
+                    <h1 class="h3 p-2">
+                        <i class="fas fa-heartbeat"></i> Nursing CPD Management Portal
+                    </h1>
+                    <div class="p-2">
+                        <span class="badge bg-light text-dark">
+                            Nizwa Hospital | <span id="current-date"></span>
+                        </span>
+                    </div>
+                </header>
+
+                <!-- Main Page Section -->
+                <section id="main-page" class="mb-5 active">
+                    <h2><i class="fas fa-list-ul"></i> Upcoming CPD Events</h2>
+                    <p class="text-muted">Register early to secure your spot in mandatory and approved events.</p>
+                    
+                    <!-- Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <input type="text" id="search-events" class="form-control" placeholder="🔍 Search events...">
+                        </div>
+                        <div class="col-md-4">
+                            <select id="filter-department" class="form-select">
+                                <option value="">All Departments</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="filter-status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Pending">Pending</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="events-loading" class="loading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Loading events...</p>
+                    </div>
+                    
+                    <div id="event-list" class="row"></div>
+                    
+                    <div id="no-events" class="alert alert-info" style="display: none;">
+                        <i class="fas fa-info-circle"></i> No events found matching your criteria.
+                    </div>
+                </section>
+
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="mb-5">
+                    <h2 class="mb-3"><i class="fas fa-chart-pie"></i> CPD Activity Dashboard</h2>
+
+                    <div id="dashboard-loading" class="loading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Loading dashboard data...</p>
+                    </div>
+
+                    <div id="dashboard-content" style="display: none;">
+                        <!-- KPI Cards -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-white bg-primary mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><i class="fas fa-users"></i> Total Staff</h5>
+                                        <p class="card-text h2" id="kpi-total-staff">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-white bg-success mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><i class="fas fa-calendar-check"></i> Total Events</h5>
+                                        <p class="card-text h2" id="kpi-total-events">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-white bg-warning mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><i class="fas fa-user-check"></i> Registrations</h5>
+                                        <p class="card-text h2" id="kpi-registrations">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-white bg-info mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><i class="fas fa-clock"></i> Avg CPD Hours</h5>
+                                        <p class="card-text h2" id="kpi-avg-hours">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header bg-primary text-white">
+                                        <i class="fas fa-chart-bar"></i> CPD Hours by Department
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="hoursChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header bg-success text-white">
+                                        <i class="fas fa-chart-pie"></i> Compliance Status
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="completionChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Calendar Section -->
+                <section id="calendar" class="mb-5">
+                    <h2><i class="fas fa-calendar"></i> Event Calendar</h2>
+                    <div class="card shadow">
+                        <div class="card-body">
+                            <div id="full-calendar-container"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Registration Section -->
+                <section id="registration" class="mb-5">
+                    <h2><i class="fas fa-edit"></i> CPD Registration</h2>
+                    <div class="card shadow">
+                        <div class="card-body">
+                            <form id="cpd-registration-form">
+                                <div class="mb-3">
+                                    <label for="staffId" class="form-label">
+                                        <i class="fas fa-id-badge"></i> Staff ID <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="staffId" placeholder="Enter your Staff ID" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="cpdEvent" class="form-label">
+                                        <i class="fas fa-calendar-alt"></i> Select CPD Event <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select" id="cpdEvent" required>
+                                        <option value="">Select an upcoming event...</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="staff-preview" class="alert alert-info" style="display: none;">
+                                    <h6><i class="fas fa-info-circle"></i> Staff Information</h6>
+                                    <div id="staff-preview-content"></div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-paper-plane"></i> Submit Registration
+                                </button>
+                                <div id="form-message" class="mt-3"></div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Leaders and Announcements Section -->
+                <div class="row mb-5">
+                    <section id="leaders" class="col-md-6">
+                        <h2><i class="fas fa-sitemap"></i> Board of Leaders</h2>
+                        <div id="leaders-loading" class="loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div id="leader-list" class="list-group"></div>
+                        <div id="no-leaders" class="alert alert-info" style="display: none;">
+                            <i class="fas fa-info-circle"></i> No leadership information available.
+                        </div>
+                    </section>
+
+                    <section id="announcements" class="col-md-6">
+                        <h2><i class="fas fa-bullhorn"></i> Announcements</h2>
+                        <div id="announcement-area">
+                            <div class="alert alert-info" role="alert">
+                                <strong><i class="fas fa-info-circle"></i> Welcome!</strong> 
+                                Stay updated with important CPD announcements and deadlines.
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Event Details Modal -->
+    <div class="modal fade" id="eventModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-info-circle"></i> Event Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="event-modal-content"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        // Display current date
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+
+        // Sidebar navigation
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Update active link
+                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show corresponding section
+                const sectionId = this.getAttribute('data-section');
+                document.querySelectorAll('main section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById(sectionId).classList.add('active');
+                
+                // Trigger section-specific actions
+                if (sectionId === 'calendar' && !window.calendarInitialized) {
+                    app.initCalendar();
+                } else if (sectionId === 'dashboard') {
+                    app.loadDashboard();
+                } else if (sectionId === 'leaders') {
+                    app.loadLeaders();
+                }
+            });
+        });
+
+        // Override app.showSection to work with Bootstrap layout
+        if (typeof app !== 'undefined') {
+            const originalShowSection = app.showSection;
+            app.showSection = function(sectionId) {
+                // Map section IDs
+                const sectionMap = {
+                    'events': 'main-page',
+                    'register': 'registration',
+                    'calendar': 'calendar',
+                    'dashboard': 'dashboard',
+                    'leaders': 'leaders'
+                };
+                
+                const targetSection = sectionMap[sectionId] || sectionId;
+                
+                // Update sidebar navigation
+                document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('data-section') === targetSection) {
+                        link.classList.add('active');
+                    }
+                });
+                
+                // Show section
+                document.querySelectorAll('main section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                const section = document.getElementById(targetSection);
+                if (section) {
+                    section.classList.add('active');
+                }
+                
+                // Trigger section-specific actions
+                if (targetSection === 'calendar' && !window.calendarInitialized) {
+                    this.initCalendar();
+                } else if (targetSection === 'dashboard') {
+                    this.loadDashboard();
+                } else if (targetSection === 'leaders') {
+                    this.loadLeaders();
+                }
+            };
+        }
+    </script>
+</body>
+</html>
