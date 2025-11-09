@@ -60,51 +60,63 @@ class NursingCPDApp {
 
     // Navigation
     showSection(sectionId) {
+        // Map old section IDs to Bootstrap section IDs
+        const sectionMap = {
+            'events': 'main-page',
+            'register': 'registration',
+            'calendar': 'calendar',
+            'dashboard': 'dashboard',
+            'leaders': 'leaders'
+        };
+        
+        const targetSection = sectionMap[sectionId] || sectionId;
+        
         // Update active section
-        document.querySelectorAll('.section').forEach(section => {
+        document.querySelectorAll('main section').forEach(section => {
             section.classList.remove('active');
         });
         
-        const targetSection = sectionId === 'calendar' ? 'calendar-section' : sectionId;
         const sectionElement = document.getElementById(targetSection);
         if (sectionElement) {
             sectionElement.classList.add('active');
         }
 
-        // Update active nav button
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('active');
+        // Update active nav button in sidebar
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('data-section') === targetSection) {
+                link.classList.add('active');
+            }
         });
-        event.target.classList.add('active');
 
-        this.currentSection = sectionId;
+        this.currentSection = targetSection;
 
         // Load section-specific data
-        if (sectionId === 'calendar' && !this.calendar) {
+        if (targetSection === 'calendar' && !window.calendarInitialized) {
             this.initCalendar();
-        } else if (sectionId === 'dashboard') {
+        } else if (targetSection === 'dashboard') {
             this.loadDashboard();
-        } else if (sectionId === 'leaders') {
+        } else if (targetSection === 'leaders') {
             this.loadLeaders();
         }
     }
 
     toggleMobileMenu() {
         const menu = document.getElementById('mobileMenu');
-        menu.classList.toggle('active');
+        if (menu) {
+            menu.classList.toggle('active');
+        }
     }
 
     // Events Management
     async loadEvents() {
         const loadingEl = document.getElementById('events-loading');
-        const gridEl = document.getElementById('events-grid');
-        const errorEl = document.getElementById('events-error');
+        const gridEl = document.getElementById('event-list');
         const noEventsEl = document.getElementById('no-events');
 
         try {
-            loadingEl.style.display = 'block';
-            errorEl.style.display = 'none';
-            noEventsEl.style.display = 'none';
+            if (loadingEl) loadingEl.style.display = 'block';
+            if (noEventsEl) noEventsEl.style.display = 'none';
 
             const response = await fetch(`${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_EVENTS}`);
             const data = await response.json();
@@ -119,26 +131,35 @@ class NursingCPDApp {
             }
         } catch (error) {
             console.error('Error loading events:', error);
-            errorEl.textContent = '⚠️ Failed to load events. Please check your API configuration and try again.';
-            errorEl.style.display = 'block';
-            gridEl.innerHTML = '';
+            if (gridEl) {
+                gridEl.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Error loading events.</strong> Please check your API configuration and try again.
+                        </div>
+                    </div>
+                `;
+            }
         } finally {
-            loadingEl.style.display = 'none';
+            if (loadingEl) loadingEl.style.display = 'none';
         }
     }
 
     displayEvents(events) {
-        const gridEl = document.getElementById('events-grid');
+        const gridEl = document.getElementById('event-list');
         const noEventsEl = document.getElementById('no-events');
+
+        if (!gridEl) return;
 
         gridEl.innerHTML = '';
 
         if (!events || events.length === 0) {
-            noEventsEl.style.display = 'block';
+            if (noEventsEl) noEventsEl.style.display = 'block';
             return;
         }
 
-        noEventsEl.style.display = 'none';
+        if (noEventsEl) noEventsEl.style.display = 'none';
 
         events.forEach(event => {
             const card = this.createEventCard(event);
