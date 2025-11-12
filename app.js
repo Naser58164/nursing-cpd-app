@@ -122,10 +122,20 @@ class NursingCPDApp {
             const data = await response.json();
 
             if (data.success && data.events) {
-                this.events = data.events;
-                this.displayEvents(data.events);
-                this.populateEventDropdown(data.events);
-                this.populateDepartmentFilter(data.events);
+                // Filter to show only today and future events
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Set to start of day for comparison
+                
+                const upcomingEvents = data.events.filter(event => {
+                    const eventDate = new Date(event.eventDate);
+                    eventDate.setHours(0, 0, 0, 0);
+                    return eventDate >= today; // Only events from today onwards
+                });
+
+                this.events = upcomingEvents;
+                this.displayEvents(upcomingEvents);
+                this.populateEventDropdown(upcomingEvents);
+                this.populateDepartmentFilter(upcomingEvents);
             } else {
                 throw new Error(data.message || 'Failed to load events');
             }
