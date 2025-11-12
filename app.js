@@ -497,26 +497,37 @@ class NursingCPDApp {
         const contentEl = document.getElementById('dashboard-content');
 
         try {
-            loadingEl.style.display = 'block';
-            contentEl.style.display = 'none';
+            if (loadingEl) loadingEl.style.display = 'block';
+            if (contentEl) contentEl.style.display = 'none';
 
             const response = await fetch(`${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_DASHBOARD}`);
             const data = await response.json();
 
             if (data.success) {
+                // Update KPIs
                 this.displayKPIs(data.kpis);
-                this.displayDepartmentChart(data.departmentStats);
-                this.displayComplianceChart(data.kpis);
-                contentEl.style.display = 'block';
+                
+                // Render all charts
+                this.displayEventsPerMonthChart(data.eventsPerMonth);
+                this.displayParticipantsPerEventChart(data.participantsPerEvent);
+                this.displayParticipantsPerDeptChart(data.participantsPerDept);
+                this.displayParticipantsPerUnitChart(data.participantsPerUnit);
+                this.displayPitfallChart(data.pitfallPerDept);
+                this.displayStaffPerDeptChart(data.staffPerDept);
+                this.displayDepartmentSummaryTable(data.departmentSummary);
+                
+                if (contentEl) contentEl.style.display = 'block';
             } else {
                 throw new Error(data.message || 'Failed to load dashboard');
             }
         } catch (error) {
             console.error('Error loading dashboard:', error);
-            loadingEl.innerHTML = '<p class="error-message">Failed to load dashboard data. Please try again.</p>';
+            if (loadingEl) {
+                loadingEl.innerHTML = '<div class="alert alert-danger">Failed to load dashboard data. Please try again.</div>';
+            }
         } finally {
             setTimeout(() => {
-                loadingEl.style.display = 'none';
+                if (loadingEl) loadingEl.style.display = 'none';
             }, 500);
         }
     }
@@ -524,13 +535,13 @@ class NursingCPDApp {
     displayKPIs(kpis) {
         // Update individual KPI cards
         const totalStaffEl = document.getElementById('kpi-total-staff');
+        const totalParticipantsEl = document.getElementById('kpi-total-participants');
         const totalEventsEl = document.getElementById('kpi-total-events');
-        const registrationsEl = document.getElementById('kpi-registrations');
         const avgHoursEl = document.getElementById('kpi-avg-hours');
 
         if (totalStaffEl) totalStaffEl.textContent = kpis.totalStaff || 0;
+        if (totalParticipantsEl) totalParticipantsEl.textContent = kpis.totalParticipants || 0;
         if (totalEventsEl) totalEventsEl.textContent = kpis.totalEvents || 0;
-        if (registrationsEl) registrationsEl.textContent = kpis.totalRegistrations || 0;
         if (avgHoursEl) avgHoursEl.textContent = kpis.avgCPDHours || 0;
     }
 
@@ -612,6 +623,286 @@ class NursingCPDApp {
                     }
                 }
             }
+        });
+    }
+
+    // New Dashboard Chart Functions
+    displayEventsPerMonthChart(data) {
+        const ctx = document.getElementById('eventsPerMonthChart');
+        if (!ctx) return;
+
+        if (this.charts.eventsPerMonth) {
+            this.charts.eventsPerMonth.destroy();
+        }
+
+        this.charts.eventsPerMonth = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: 'Events',
+                    data: data.values || [],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    displayParticipantsPerEventChart(data) {
+        const ctx = document.getElementById('participantsPerEventChart');
+        if (!ctx) return;
+
+        if (this.charts.participantsPerEvent) {
+            this.charts.participantsPerEvent.destroy();
+        }
+
+        this.charts.participantsPerEvent = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: 'Participants',
+                    data: data.values || [],
+                    backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    displayParticipantsPerDeptChart(data) {
+        const ctx = document.getElementById('participantsPerDeptChart');
+        if (!ctx) return;
+
+        if (this.charts.participantsPerDept) {
+            this.charts.participantsPerDept.destroy();
+        }
+
+        this.charts.participantsPerDept = new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: 'Participants',
+                    data: data.values || [],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+
+    displayParticipantsPerUnitChart(data) {
+        const ctx = document.getElementById('participantsPerUnitChart');
+        if (!ctx) return;
+
+        if (this.charts.participantsPerUnit) {
+            this.charts.participantsPerUnit.destroy();
+        }
+
+        this.charts.participantsPerUnit = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: 'Participants',
+                    data: data.values || [],
+                    backgroundColor: 'rgba(153, 102, 255, 0.8)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    displayPitfallChart(data) {
+        const ctx = document.getElementById('pitfallPerDeptChart');
+        if (!ctx) return;
+
+        if (this.charts.pitfall) {
+            this.charts.pitfall.destroy();
+        }
+
+        this.charts.pitfall = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: 'Non-Participation Rate (%)',
+                    data: data.percentages || [],
+                    backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const percentage = context.parsed.y;
+                                const count = data.counts ? data.counts[context.dataIndex] : 0;
+                                return `${percentage}% (${count} staff not participating)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    displayStaffPerDeptChart(data) {
+        const ctx = document.getElementById('staffPerDeptChart');
+        if (!ctx) return;
+
+        if (this.charts.staffPerDept) {
+            this.charts.staffPerDept.destroy();
+        }
+
+        this.charts.staffPerDept = new Chart(ctx.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: 'Staff Count',
+                    data: data.values || [],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(199, 199, 199, 0.8)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+
+    displayDepartmentSummaryTable(departments) {
+        const tableBody = document.getElementById('departmentSummaryTable')?.querySelector('tbody');
+        if (!tableBody) return;
+
+        tableBody.innerHTML = '';
+
+        if (!departments || departments.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No data available</td></tr>';
+            return;
+        }
+
+        departments.forEach(dept => {
+            const row = document.createElement('tr');
+            const rateClass = dept.participationRate >= 75 ? 'success' : 
+                             dept.participationRate >= 50 ? 'warning' : 'danger';
+            
+            row.innerHTML = `
+                <td><strong>${this.escapeHtml(dept.department)}</strong></td>
+                <td>${dept.totalStaff}</td>
+                <td>${dept.participants}</td>
+                <td><span class="badge bg-${rateClass}">${dept.participationRate}%</span></td>
+                <td>${dept.nonParticipants}</td>
+            `;
+            tableBody.appendChild(row);
         });
     }
 
