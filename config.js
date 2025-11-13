@@ -3,7 +3,6 @@
 
 const CONFIG = {
     API_URL: 'https://script.google.com/macros/s/AKfycbxeXtNg4cqYJu4YMOVNvskRRzbdQezKXMSLig2FreU0tarQY-Q5VgDzH_mkLqNgAYRt2Q/exec',
-
     
     // Application Settings
     APP_NAME: 'Nursing CPD Portal',
