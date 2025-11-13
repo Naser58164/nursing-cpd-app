@@ -512,7 +512,6 @@ class NursingCPDApp {
                 this.displayParticipantsPerEventChart(data.participantsPerEvent);
                 this.displayParticipantsPerDeptChart(data.participantsPerDept);
                 this.displayParticipantsPerUnitChart(data.participantsPerUnit);
-                this.displayPitfallChart(data.pitfallPerDept);
                 this.displayStaffPerDeptChart(data.staffPerDept);
                 this.displayDepartmentSummaryTable(data.departmentSummary);
                 
@@ -781,58 +780,6 @@ class NursingCPDApp {
                         beginAtZero: true,
                         ticks: {
                             stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    displayPitfallChart(data) {
-        const ctx = document.getElementById('pitfallPerDeptChart');
-        if (!ctx) return;
-
-        if (this.charts.pitfall) {
-            this.charts.pitfall.destroy();
-        }
-
-        this.charts.pitfall = new Chart(ctx.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: data.labels || [],
-                datasets: [{
-                    label: 'Non-Participation Rate (%)',
-                    data: data.percentages || [],
-                    backgroundColor: 'rgba(255, 99, 132, 0.8)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const percentage = context.parsed.y;
-                                const count = data.counts ? data.counts[context.dataIndex] : 0;
-                                return `${percentage}% (${count} staff not participating)`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
                         }
                     }
                 }
