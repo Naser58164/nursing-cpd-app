@@ -4,7 +4,7 @@
 const CONFIG = {
     API_URL: 'https://script.google.com/macros/s/AKfycbynd7zJim1IPeajPFeH-oRP_P5bD7kroKRc-iNYyOVVwLWl76rQielWvljDgMvFpNOAeA/exec',
     
-    
+
     // Application Settings
     APP_NAME: 'Nursing CPD Portal',
     HOSPITAL_NAME: 'Nizwa Hospital',
