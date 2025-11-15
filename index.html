@@ -84,32 +84,32 @@
                         <i class="fas fa-hospital-user"></i> CPD Navigation
                     </h5>
                     <ul class="nav flex-column">
-                        <li class="nav-item">
+                        <li class="nav-item" id="nav-main-page">
                             <a class="nav-link active" href="#" data-section="main-page">
                                 <i class="fas fa-home me-2"></i> Main Page
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" id="nav-dashboard">
                             <a class="nav-link" href="#" data-section="dashboard">
                                 <i class="fas fa-chart-line me-2"></i> Dashboard (KPI)
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" id="nav-calendar">
                             <a class="nav-link" href="#" data-section="calendar">
                                 <i class="fas fa-calendar-alt me-2"></i> Calendar
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" id="nav-registration">
                             <a class="nav-link" href="#" data-section="registration">
                                 <i class="fas fa-user-plus me-2"></i> New Registration
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" id="nav-leaders">
                             <a class="nav-link" href="#" data-section="leaders">
                                 <i class="fas fa-users me-2"></i> Board of Leaders
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" id="nav-announcements">
                             <a class="nav-link" href="#" data-section="announcements">
                                 <i class="fas fa-bullhorn me-2"></i> Announcements
                             </a>
@@ -126,10 +126,15 @@
                     <h1 class="h3 p-2">
                         <i class="fas fa-heartbeat"></i> Nursing CPD Management Portal
                     </h1>
-                    <div class="p-2">
-                        <span class="badge bg-light text-dark">
-                            Nizwa Hospital | <span id="current-date"></span>
-                        </span>
+                    <div class="d-flex align-items-center gap-3">
+                        <div id="user-info" class="p-2">
+                            <!-- User info will be inserted here by auth.js -->
+                        </div>
+                        <div class="p-2">
+                            <span class="badge bg-light text-dark">
+                                Nizwa Hospital | <span id="current-date"></span>
+                            </span>
+                        </div>
                     </div>
                 </header>
 
@@ -275,25 +280,10 @@
                             </div>
                         </div>
 
-                        <!-- Charts Section 3: Staff Distribution & Compliance -->
-                        <h4 class="mb-3 mt-4"><i class="fas fa-chart-pie"></i> Staff Distribution & Compliance</h4>
+                        <!-- Charts Section 3: Staff Distribution -->
+                        <h4 class="mb-3 mt-4"><i class="fas fa-chart-pie"></i> Staff Distribution</h4>
                         <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="card shadow mb-4">
-                                    <div class="card-header bg-danger text-white">
-                                        <i class="fas fa-exclamation-triangle"></i> Pitfall: Staff Per Department
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="pitfallPerDeptChart"></canvas>
-                                        <div class="mt-3">
-                                            <small class="text-muted">
-                                                <i class="fas fa-info-circle"></i> Shows percentage of staff NOT participating per department
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <div class="card shadow mb-4">
                                     <div class="card-header bg-secondary text-white">
                                         <i class="fas fa-chart-bar"></i> Staff Distribution by Department
@@ -428,6 +418,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <script src="config.js"></script>
+    <script src="auth.js"></script>
     <script src="app.js"></script>
 
     <script>
