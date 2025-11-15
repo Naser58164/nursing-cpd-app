@@ -32,6 +32,7 @@ const CONFIG = {
     
     // API Endpoints (actions)
     ENDPOINTS: {
+        LOGIN: 'login',
         GET_EVENTS: 'getUpcomingEvents',
         REGISTER_STAFF: 'registerStaff',
         GET_DASHBOARD: 'getDashboardData',
