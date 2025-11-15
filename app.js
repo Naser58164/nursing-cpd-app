@@ -500,8 +500,19 @@ class NursingCPDApp {
             if (loadingEl) loadingEl.style.display = 'block';
             if (contentEl) contentEl.style.display = 'none';
 
+            // Check if API URL is configured
+            if (!CONFIG.API_URL || CONFIG.API_URL.includes('YOUR_DEPLOYMENT_ID')) {
+                throw new Error('API URL not configured. Please update config.js with your Google Apps Script URL.');
+            }
+
             const response = await fetch(`${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_DASHBOARD}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
+            console.log('Dashboard data received:', data); // Debug log
 
             if (data.success) {
                 // Update KPIs
@@ -522,24 +533,57 @@ class NursingCPDApp {
         } catch (error) {
             console.error('Error loading dashboard:', error);
             if (loadingEl) {
-                loadingEl.innerHTML = '<div class="alert alert-danger">Failed to load dashboard data. Please try again.</div>';
+                let errorMessage = 'Failed to load dashboard data.';
+                
+                if (error.message.includes('API URL not configured')) {
+                    errorMessage = `
+                        <div class="alert alert-warning" role="alert">
+                            <h5><i class="fas fa-exclamation-triangle"></i> API Not Configured</h5>
+                            <p>Please configure your Google Apps Script API URL in <code>config.js</code></p>
+                            <hr>
+                            <p class="mb-0">
+                                <strong>Steps:</strong><br>
+                                1. Deploy your Google Apps Script<br>
+                                2. Copy the deployment URL<br>
+                                3. Update <code>config.js</code> with the URL
+                            </p>
+                        </div>
+                    `;
+                } else if (error.message.includes('HTTP error')) {
+                    errorMessage = `
+                        <div class="alert alert-danger" role="alert">
+                            <h5><i class="fas fa-times-circle"></i> Connection Error</h5>
+                            <p>${error.message}</p>
+                            <p class="mb-0">Please check your API URL and deployment settings.</p>
+                        </div>
+                    `;
+                } else {
+                    errorMessage = `
+                        <div class="alert alert-danger" role="alert">
+                            <h5><i class="fas fa-times-circle"></i> Error Loading Dashboard</h5>
+                            <p>${error.message}</p>
+                            <p class="mb-0">Please check the browser console for more details.</p>
+                        </div>
+                    `;
+                }
+                
+                loadingEl.innerHTML = errorMessage;
+                loadingEl.style.display = 'block';
             }
-        } finally {
-            setTimeout(() => {
-                if (loadingEl) loadingEl.style.display = 'none';
-            }, 500);
         }
     }
 
     displayKPIs(kpis) {
         // Update individual KPI cards
         const totalStaffEl = document.getElementById('kpi-total-staff');
-        const totalParticipantsEl = document.getElementById('kpi-total-participants');
+        const uniqueParticipantsEl = document.getElementById('kpi-unique-participants');
+        const totalRegistrationsEl = document.getElementById('kpi-total-registrations');
         const totalEventsEl = document.getElementById('kpi-total-events');
         const avgHoursEl = document.getElementById('kpi-avg-hours');
 
         if (totalStaffEl) totalStaffEl.textContent = kpis.totalStaff || 0;
-        if (totalParticipantsEl) totalParticipantsEl.textContent = kpis.totalParticipants || 0;
+        if (uniqueParticipantsEl) uniqueParticipantsEl.textContent = kpis.totalParticipants || 0;
+        if (totalRegistrationsEl) totalRegistrationsEl.textContent = kpis.totalRegistrations || 0;
         if (totalEventsEl) totalEventsEl.textContent = kpis.totalEvents || 0;
         if (avgHoursEl) avgHoursEl.textContent = kpis.avgCPDHours || 0;
     }
