@@ -50,12 +50,30 @@ class AuthManager {
     }
     
     /**
-     * Logout user
+     * Logout user with confirmation
      */
     logout() {
-        localStorage.removeItem('cpdUser');
-        this.currentUser = null;
-        window.location.href = 'login.html';
+        // Show confirmation dialog
+        if (confirm('Are you sure you want to logout?')) {
+            // Clear user data
+            localStorage.removeItem('cpdUser');
+            this.currentUser = null;
+            
+            // Show logout message
+            const header = document.querySelector('header');
+            if (header) {
+                const logoutMsg = document.createElement('div');
+                logoutMsg.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3';
+                logoutMsg.style.zIndex = '9999';
+                logoutMsg.innerHTML = '<i class="fas fa-check-circle"></i> Logged out successfully. Redirecting...';
+                document.body.appendChild(logoutMsg);
+            }
+            
+            // Redirect to login page after short delay
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 1000);
+        }
     }
     
     /**
@@ -161,20 +179,14 @@ class AuthManager {
      * Update UI with user information
      */
     updateUI() {
-        // Update welcome message
-        const welcomeEl = document.getElementById('welcome-message');
-        if (welcomeEl) {
-            welcomeEl.textContent = `Welcome, ${this.currentUser.name}`;
-        }
-        
-        // Show user info in header
+        // Update user info in header
         const userInfoEl = document.getElementById('user-info');
         if (userInfoEl) {
             const roleClass = this.getRoleClass(this.currentUser.role);
             userInfoEl.innerHTML = `
                 <div class="d-flex align-items-center">
-                    <div class="me-3">
-                        <strong>${this.currentUser.name}</strong><br>
+                    <div class="me-3 text-end">
+                        <div><strong>${this.currentUser.name}</strong></div>
                         <small class="text-muted">${this.currentUser.designation}</small>
                     </div>
                     <span class="badge ${roleClass}">${this.currentUser.role}</span>
@@ -182,8 +194,19 @@ class AuthManager {
             `;
         }
         
-        // Add logout button
-        this.addLogoutButton();
+        // Update user info in sidebar
+        const sidebarUserInfo = document.getElementById('sidebar-user-info');
+        if (sidebarUserInfo) {
+            const roleClass = this.getRoleClass(this.currentUser.role);
+            sidebarUserInfo.innerHTML = `
+                <div class="mb-2">
+                    <i class="fas fa-user-circle fa-3x text-primary"></i>
+                </div>
+                <div class="fw-bold">${this.currentUser.name}</div>
+                <small class="text-muted d-block mb-2">${this.currentUser.designation}</small>
+                <span class="badge ${roleClass}">${this.currentUser.role}</span>
+            `;
+        }
     }
     
     /**
@@ -202,18 +225,6 @@ class AuthManager {
     /**
      * Add logout button to header
      */
-    addLogoutButton() {
-        const header = document.querySelector('header .container');
-        if (header && !document.getElementById('logout-btn')) {
-            const logoutBtn = document.createElement('button');
-            logoutBtn.id = 'logout-btn';
-            logoutBtn.className = 'btn btn-outline-light btn-sm';
-            logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Logout';
-            logoutBtn.onclick = () => this.logout();
-            
-            header.appendChild(logoutBtn);
-        }
-    }
     
     /**
      * Show access denied message
