@@ -208,8 +208,6 @@ class AuthManager {
     }
     
     /**
-     * Add logout button to header
-     */
     
     /**
      * Show access denied message
