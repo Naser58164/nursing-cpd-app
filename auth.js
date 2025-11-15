@@ -179,22 +179,7 @@ class AuthManager {
      * Update UI with user information
      */
     updateUI() {
-        // Update user info in header
-        const userInfoEl = document.getElementById('user-info');
-        if (userInfoEl) {
-            const roleClass = this.getRoleClass(this.currentUser.role);
-            userInfoEl.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <div class="me-3 text-end">
-                        <div><strong>${this.currentUser.name}</strong></div>
-                        <small class="text-muted">${this.currentUser.designation}</small>
-                    </div>
-                    <span class="badge ${roleClass}">${this.currentUser.role}</span>
-                </div>
-            `;
-        }
-        
-        // Update user info in sidebar
+        // Update user info in sidebar only (header user info removed)
         const sidebarUserInfo = document.getElementById('sidebar-user-info');
         if (sidebarUserInfo) {
             const roleClass = this.getRoleClass(this.currentUser.role);
