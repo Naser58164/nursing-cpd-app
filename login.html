@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Nursing CPD Portal</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            max-width: 450px;
+            width: 100%;
+            margin: 20px;
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .login-header i {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        
+        .login-header h2 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .login-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .login-body {
+            padding: 40px 30px;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .form-control {
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            color: white;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .alert {
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .info-text {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .role-admin { background: #ff6b6b; color: white; }
+        .role-moderator { background: #4ecdc4; color: white; }
+        .role-leader { background: #45b7d1; color: white; }
+        .role-user { background: #95afc0; color: white; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <i class="fas fa-user-nurse"></i>
+            <h2>Nursing CPD Portal</h2>
+            <p>Nizwa Hospital - Continuing Professional Development</p>
+        </div>
+        
+        <div class="login-body">
+            <div id="alert-container"></div>
+            
+            <div id="login-form">
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="staffId" class="form-label">
+                            <i class="fas fa-id-badge"></i> Staff ID
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="staffId" 
+                            placeholder="Enter your Staff ID"
+                            required
+                            autofocus>
+                        <small class="form-text text-muted">
+                            Enter your registered Staff ID to access the portal
+                        </small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-login">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+                
+                <div class="loading-spinner" id="loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Authenticating...</p>
+                </div>
+                
+                <div class="info-text">
+                    <i class="fas fa-info-circle"></i> 
+                    Access levels: <span class="role-badge role-admin">Admin</span>
+                    <span class="role-badge role-moderator">Moderator</span>
+                    <span class="role-badge role-leader">Leader</span>
+                    <span class="role-badge role-user">User</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Config -->
+    <script src="config.js"></script>
+    
+    <!-- Login Script -->
+    <script>
+        class LoginManager {
+            constructor() {
+                this.form = document.getElementById('loginForm');
+                this.staffIdInput = document.getElementById('staffId');
+                this.loadingEl = document.getElementById('loading');
+                this.alertContainer = document.getElementById('alert-container');
+                
+                this.init();
+            }
+            
+            init() {
+                this.form.addEventListener('submit', (e) => this.handleLogin(e));
+                
+                // Check if already logged in
+                const currentUser = this.getCurrentUser();
+                if (currentUser) {
+                    this.showMessage('You are already logged in. Redirecting...', 'info');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                }
+            }
+            
+            async handleLogin(e) {
+                e.preventDefault();
+                
+                const staffId = this.staffIdInput.value.trim();
+                
+                if (!staffId) {
+                    this.showMessage('Please enter your Staff ID', 'warning');
+                    return;
+                }
+                
+                this.showLoading(true);
+                this.clearMessages();
+                
+                try {
+                    const response = await fetch(`${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.LOGIN}&staffId=${encodeURIComponent(staffId)}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.user) {
+                        // Store user data in localStorage
+                        localStorage.setItem('cpdUser', JSON.stringify(data.user));
+                        
+                        this.showMessage(`Welcome, ${data.user.name}! Role: ${data.user.role}`, 'success');
+                        
+                        // Redirect to main app
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1500);
+                    } else {
+                        this.showMessage(data.message || 'Login failed. Please check your Staff ID.', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    this.showMessage('Connection error. Please check your internet connection and try again.', 'danger');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+            
+            showLoading(show) {
+                if (show) {
+                    this.form.style.display = 'none';
+                    this.loadingEl.style.display = 'block';
+                } else {
+                    this.form.style.display = 'block';
+                    this.loadingEl.style.display = 'none';
+                }
+            }
+            
+            showMessage(message, type) {
+                this.alertContainer.innerHTML = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+            }
+            
+            clearMessages() {
+                this.alertContainer.innerHTML = '';
+            }
+            
+            getCurrentUser() {
+                const userStr = localStorage.getItem('cpdUser');
+                return userStr ? JSON.parse(userStr) : null;
+            }
+        }
+        
+        // Initialize login manager
+        document.addEventListener('DOMContentLoaded', () => {
+            new LoginManager();
+        });
+    </script>
+</body>
+</html>
