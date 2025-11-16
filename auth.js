@@ -129,6 +129,16 @@ class AuthManager {
             this.hideSection('registration');
         }
         
+        // Show department restriction notice for Leaders
+        if (permissions.departmentRestricted && this.currentUser.department) {
+            const noticeEl = document.getElementById('dept-restriction-notice');
+            const deptNameEl = document.getElementById('user-department-name');
+            if (noticeEl && deptNameEl) {
+                deptNameEl.textContent = this.currentUser.department;
+                noticeEl.style.display = 'block';
+            }
+        }
+        
         // Disable registration button if no permission
         if (!permissions.canRegister) {
             this.disableRegistration();
@@ -208,6 +218,8 @@ class AuthManager {
     }
     
     /**
+     * Add logout button to header
+     */
     
     /**
      * Show access denied message
