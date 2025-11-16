@@ -2,7 +2,7 @@
 // Replace the API_URL with your deployed Google Apps Script Web App URL
 
 const CONFIG = {
-    API_URL: 'https://script.google.com/macros/s/AKfycbzOAsWrGM-uxPpKbjzFCUG9fp4CHw8sEg0vxoJQbweIpEmSEDygDuqnPi20Rl1LDIHRWQ/exec',
+    API_URL: 'https://script.google.com/macros/s/AKfycbz9rSWUabvz9s_btOGYlhA9R_nP-CwvX0MZqEiAcq7_O10s_xUxGBR9HaMAgLuQU0o0KQ/exec',
     
 
    // Application Settings
