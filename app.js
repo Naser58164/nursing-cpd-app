@@ -369,8 +369,31 @@ class NursingCPDApp {
         }
 
         if (!staffId) {
-            this.showMessage(messageDiv, '<i class="fas fa-exclamation-circle"></i> Please enter your Staff ID', 'danger');
+            this.showMessage(messageDiv, '<i class="fas fa-exclamation-circle"></i> Please enter Staff ID', 'danger');
             return;
+        }
+
+        // Check department restriction for Leaders
+        const currentUser = authManager.getUser();
+        if (currentUser && currentUser.permissions && currentUser.permissions.departmentRestricted) {
+            try {
+                // Verify staff department matches user's department
+                const staffResponse = await fetch(`${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_STAFF}&staffId=${staffId}`);
+                const staffData = await staffResponse.json();
+                
+                if (staffData.success && staffData.staff) {
+                    if (staffData.staff.department !== currentUser.department) {
+                        this.showMessage(messageDiv, 
+                            `<i class="fas fa-exclamation-triangle"></i> <strong>Access Denied:</strong> You can only register staff from your department (${currentUser.department}). This staff member is from ${staffData.staff.department}.`, 
+                            'danger');
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('Error verifying staff department:', error);
+                this.showMessage(messageDiv, '<i class="fas fa-times-circle"></i> Error validating staff information', 'danger');
+                return;
+            }
         }
 
         // Disable button and show loading
@@ -430,15 +453,53 @@ class NursingCPDApp {
 
             if (data.success && data.staff) {
                 const staff = data.staff;
+                
+                // Check department restriction for Leaders
+                const currentUser = authManager.getUser();
+                if (currentUser && currentUser.permissions && currentUser.permissions.departmentRestricted) {
+                    if (staff.department !== currentUser.department) {
+                        previewContent.innerHTML = `
+                            <div class="alert alert-danger mb-0">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                <strong>Access Denied:</strong> You can only register staff from your department (${this.escapeHtml(currentUser.department)}).
+                                <br>This staff member is from: ${this.escapeHtml(staff.department)}
+                            </div>
+                        `;
+                        previewDiv.className = 'alert alert-danger';
+                        previewDiv.style.display = 'block';
+                        
+                        // Disable submit button
+                        const submitBtn = document.querySelector('#cpd-registration-form button[type="submit"]');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                        }
+                        return;
+                    }
+                }
+                
+                // Staff is valid - show details
                 previewContent.innerHTML = `
                     <p class="mb-1"><strong><i class="fas fa-user"></i> Name:</strong> ${this.escapeHtml(staff.name)}</p>
                     <p class="mb-1"><strong><i class="fas fa-building"></i> Department:</strong> ${this.escapeHtml(staff.department)}</p>
                     <p class="mb-1"><strong><i class="fas fa-hospital"></i> Unit:</strong> ${this.escapeHtml(staff.unit)}</p>
                     <p class="mb-0"><strong><i class="fas fa-envelope"></i> Email:</strong> ${this.escapeHtml(staff.email)}</p>
                 `;
+                previewDiv.className = 'alert alert-info';
                 previewDiv.style.display = 'block';
+                
+                // Enable submit button
+                const submitBtn = document.querySelector('#cpd-registration-form button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
             } else {
                 previewDiv.style.display = 'none';
+                
+                // Enable submit button (will fail validation later if needed)
+                const submitBtn = document.querySelector('#cpd-registration-form button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
             }
         } catch (error) {
             console.error('Error fetching staff details:', error);
