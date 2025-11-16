@@ -349,6 +349,13 @@
                 <!-- Registration Section -->
                 <section id="registration" class="mb-5">
                     <h2><i class="fas fa-edit"></i> CPD Registration</h2>
+                    
+                    <!-- Department Restriction Notice for Leaders -->
+                    <div id="dept-restriction-notice" class="alert alert-info" style="display: none;">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Department Restriction:</strong> You can only register staff from your department (<span id="user-department-name"></span>).
+                    </div>
+                    
                     <div class="card shadow">
                         <div class="card-body">
                             <form id="cpd-registration-form">
@@ -356,7 +363,8 @@
                                     <label for="staffId" class="form-label">
                                         <i class="fas fa-id-badge"></i> Staff ID <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" class="form-control" id="staffId" placeholder="Enter your Staff ID" required>
+                                    <input type="text" class="form-control" id="staffId" placeholder="Enter Staff ID" required>
+                                    <small class="form-text text-muted" id="staff-id-hint">Enter the Staff ID of the person to register</small>
                                 </div>
                                 <div class="mb-3">
                                     <label for="cpdEvent" class="form-label">
