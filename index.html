@@ -406,11 +406,19 @@
 
                     <section id="announcements" class="col-md-6">
                         <h2><i class="fas fa-bullhorn"></i> Announcements</h2>
-                        <div id="announcement-area">
-                            <div class="alert alert-info" role="alert">
-                                <strong><i class="fas fa-info-circle"></i> Welcome!</strong> 
-                                Stay updated with important CPD announcements and deadlines.
+                        
+                        <div id="announcements-loading" class="loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
+                        </div>
+                        
+                        <div id="announcements-list">
+                            <!-- Announcements will be loaded here -->
+                        </div>
+                        
+                        <div id="no-announcements" class="alert alert-info" style="display: none;">
+                            <i class="fas fa-info-circle"></i> No announcements at this time.
                         </div>
                     </section>
                 </div>
