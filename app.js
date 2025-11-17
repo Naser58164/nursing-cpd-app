@@ -98,6 +98,8 @@ class NursingCPDApp {
             this.loadDashboard();
         } else if (targetSection === 'leaders') {
             this.loadLeaders();
+        } else if (targetSection === 'announcements') {
+            this.loadAnnouncements();
         }
     }
 
@@ -1013,6 +1015,81 @@ class NursingCPDApp {
                 </div>
             `;
             gridEl.appendChild(item);
+        });
+    }
+
+    // Announcements
+    async loadAnnouncements() {
+        const loadingEl = document.getElementById('announcements-loading');
+        const listEl = document.getElementById('announcements-list');
+        const noAnnouncementsEl = document.getElementById('no-announcements');
+
+        try {
+            if (loadingEl) loadingEl.style.display = 'block';
+            if (listEl) listEl.innerHTML = '';
+            if (noAnnouncementsEl) noAnnouncementsEl.style.display = 'none';
+
+            const response = await fetch(`${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_ANNOUNCEMENTS}`);
+            const data = await response.json();
+
+            if (data.success && data.announcements && data.announcements.length > 0) {
+                this.displayAnnouncements(data.announcements);
+            } else {
+                if (noAnnouncementsEl) noAnnouncementsEl.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error loading announcements:', error);
+            if (noAnnouncementsEl) noAnnouncementsEl.style.display = 'block';
+        } finally {
+            if (loadingEl) loadingEl.style.display = 'none';
+        }
+    }
+
+    displayAnnouncements(announcements) {
+        const listEl = document.getElementById('announcements-list');
+        const noAnnouncementsEl = document.getElementById('no-announcements');
+
+        if (!announcements || announcements.length === 0) {
+            if (listEl) listEl.innerHTML = '';
+            if (noAnnouncementsEl) noAnnouncementsEl.style.display = 'block';
+            return;
+        }
+
+        if (listEl) listEl.innerHTML = '';
+        if (noAnnouncementsEl) noAnnouncementsEl.style.display = 'none';
+
+        announcements.forEach(announcement => {
+            const priorityClass = {
+                'High': 'danger',
+                'Medium': 'warning',
+                'Normal': 'info',
+                'Low': 'secondary'
+            }[announcement.priority] || 'info';
+
+            const priorityIcon = {
+                'High': 'exclamation-triangle',
+                'Medium': 'exclamation-circle',
+                'Normal': 'info-circle',
+                'Low': 'info-circle'
+            }[announcement.priority] || 'info-circle';
+
+            const card = document.createElement('div');
+            card.className = `alert alert-${priorityClass} border-start border-5 border-${priorityClass}`;
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="alert-heading mb-0">
+                        <i class="fas fa-${priorityIcon}"></i> ${this.escapeHtml(announcement.title)}
+                    </h5>
+                    <span class="badge bg-${priorityClass}">${this.escapeHtml(announcement.priority)}</span>
+                </div>
+                <p class="mb-2">${this.escapeHtml(announcement.message)}</p>
+                <hr>
+                <small class="d-flex justify-content-between">
+                    <span><i class="fas fa-calendar"></i> ${this.formatDate(announcement.createdDate)}</span>
+                    ${announcement.expiryDate ? `<span><i class="fas fa-clock"></i> Expires: ${this.formatDate(announcement.expiryDate)}</span>` : ''}
+                </small>
+            `;
+            listEl.appendChild(card);
         });
     }
 
