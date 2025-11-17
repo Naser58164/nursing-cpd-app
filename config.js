@@ -5,7 +5,7 @@ const CONFIG = {
     API_URL: 'https://script.google.com/macros/s/AKfycbz9rSWUabvz9s_btOGYlhA9R_nP-CwvX0MZqEiAcq7_O10s_xUxGBR9HaMAgLuQU0o0KQ/exec',
     
 
-   // Application Settings
+ // Application Settings
     APP_NAME: 'Nursing CPD Portal',
     HOSPITAL_NAME: 'Nizwa Hospital',
     
@@ -39,6 +39,7 @@ const CONFIG = {
         GET_STAFF: 'getStaffDetails',
         GET_STAFF_BY_DEPARTMENT: 'getStaffByDepartment',
         GET_LEADERS: 'getBoardOfLeaders',
+        GET_ANNOUNCEMENTS: 'getAnnouncements'
     }
 };
 
