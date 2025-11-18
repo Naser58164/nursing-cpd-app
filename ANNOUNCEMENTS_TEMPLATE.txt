@@ -1,0 +1,148 @@
+# 📋 Announcements Sheet Template
+
+## Copy-Paste This Into Your Google Sheet
+
+### Row 1 (Headers):
+```
+ID	Title	Message	Priority	Expiry Date	Status	Created Date	Created By
+```
+
+---
+
+### Sample Data (Rows 2-6):
+```
+ANN001	CPD Compliance Deadline	Reminder: All staff must complete 20 CPD hours by December 31, 2024. Register for upcoming events to meet your requirement.	High	2024-12-31	Active	2024-11-12	Admin
+
+ANN002	New CPD Events Available	Exciting new CPD opportunities have been added! Check the Main Page and Calendar for upcoming workshops on Emergency Care, ICU Management, and Patient Safety.	Medium	2024-12-15	Active	2024-11-12	CPD Coordinator
+
+ANN003	CPD Registration Now Open	Registration is now open for all December CPD events. Early registration is recommended as seats are limited. Visit the Registration page to sign up.	Normal	2024-11-30	Active	2024-11-12	Admin
+
+ANN004	System Maintenance Notice	The CPD Portal will undergo maintenance on November 20, 2024 from 2:00 AM to 4:00 AM. Please plan accordingly.	Low	2024-11-19	Active	2024-11-12	IT Department
+
+ANN005	Welcome to CPD Portal	Welcome to the new Nursing CPD Management Portal! Explore upcoming events, track your progress, and register for professional development opportunities.	Normal	2025-01-31	Active	2024-11-12	Admin
+```
+
+---
+
+## Column Descriptions
+
+| Column | Purpose | Valid Values | Example |
+|--------|---------|--------------|---------|
+| **A: ID** | Unique identifier | ANN001, ANN002, ANN003... | ANN001 |
+| **B: Title** | Short announcement title | Any text (50 chars max) | "CPD Deadline" |
+| **C: Message** | Full announcement text | Any text (500 chars max) | "Complete 20 hours..." |
+| **D: Priority** | Importance level | High, Medium, Normal, Low | High |
+| **E: Expiry Date** | When to stop showing | Future date (YYYY-MM-DD) | 2024-12-31 |
+| **F: Status** | Active or not | Active, Inactive | Active |
+| **G: Created Date** | When created | Date or =TODAY() | 2024-11-12 |
+| **H: Created By** | Author name | Any text | Admin |
+
+---
+
+## Quick Setup Steps
+
+### 1. Create Sheet
+- Click "+" at bottom of Google Sheets
+- Name it: **Announcements** (exact spelling)
+
+### 2. Add Headers
+- Copy Row 1 above
+- Paste into A1
+- Data will split into columns automatically
+
+### 3. Format Headers
+- Select Row 1
+- Make bold
+- Add background color (light blue)
+- Freeze row: View → Freeze → 1 row
+
+### 4. Add Data Validation
+
+**For Priority (Column D):**
+- Select D2:D1000
+- Data → Data validation
+- List: `High,Medium,Normal,Low`
+- Save
+
+**For Status (Column F):**
+- Select F2:F1000
+- Data → Data validation
+- List: `Active,Inactive`
+- Save
+
+### 5. Add Sample Data
+- Copy Rows 2-6 above
+- Paste into A2
+- Adjust dates to future dates
+
+### 6. Save & Test
+- Save your sheet
+- Deploy Code.gs
+- Refresh CPD Portal
+- Check Announcements section
+
+---
+
+## Priority Color Guide
+
+When displayed in portal:
+
+- **High** = 🔴 Red alert
+- **Medium** = 🟡 Yellow alert
+- **Normal** = 🔵 Blue info
+- **Low** = ⚪ Gray info
+
+---
+
+## Status Rules
+
+- **Active** + Future Expiry Date = ✅ Shows
+- **Active** + Past Expiry Date = ❌ Hidden
+- **Inactive** = ❌ Hidden (regardless of date)
+
+---
+
+## Pro Tips
+
+✅ Always set expiry dates  
+✅ Use HIGH priority only for urgent items  
+✅ Keep titles under 50 characters  
+✅ Keep messages under 3 sentences  
+✅ Review and update monthly  
+✅ Deactivate instead of deleting (keeps records)  
+
+---
+
+## Common Announcement Templates
+
+### Template 1: Deadline Reminder
+```
+Title: [Event Name] Registration Closes Soon
+Message: Registration for [Event Name] closes on [Date]. Don't miss this opportunity! Register now on the CPD Portal.
+Priority: High
+```
+
+### Template 2: New Event
+```
+Title: New CPD Workshop: [Topic]
+Message: Join us for an exciting workshop on [Topic] scheduled for [Date]. [Duration] CPD hours available. Register early!
+Priority: Medium
+```
+
+### Template 3: General Update
+```
+Title: [Subject] Update
+Message: [Brief description of update or change]. For more information, contact [Contact Person/Department].
+Priority: Normal
+```
+
+### Template 4: Congratulations
+```
+Title: Congratulations to [Department/Team]
+Message: Great job achieving [achievement]! Keep up the excellent work in your professional development.
+Priority: Low
+```
+
+---
+
+**Ready to use! Copy and paste into your Announcements sheet.** 📋✨
