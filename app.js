@@ -56,6 +56,9 @@ class NursingCPDApp {
 
     async loadInitialData() {
         await this.loadEvents();
+        // Load announcements and leaders on main page
+        this.loadAnnouncements();
+        this.loadLeaders();
     }
 
     // Navigation
