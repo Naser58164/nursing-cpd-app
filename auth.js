@@ -233,6 +233,88 @@ class AuthManager {
             </div>
         `;
     }
+    
+    /**
+     * Open profile edit modal
+     */
+    openProfileEdit() {
+        if (!this.currentUser) {
+            alert('Please login first');
+            return;
+        }
+        
+        // Populate form with current user data
+        document.getElementById('profile-staff-id').value = this.currentUser.staffId || '';
+        document.getElementById('profile-name').value = this.currentUser.name || '';
+        document.getElementById('profile-department').value = this.currentUser.department || '';
+        document.getElementById('profile-email').value = this.currentUser.email || '';
+        document.getElementById('profile-phone').value = this.currentUser.phone || '';
+        
+        // Clear any previous messages
+        document.getElementById('profile-message').innerHTML = '';
+        
+        // Open modal
+        const modal = new bootstrap.Modal(document.getElementById('profileEditModal'));
+        modal.show();
+    }
+    
+    /**
+     * Save profile changes
+     */
+    async saveProfile() {
+        const email = document.getElementById('profile-email').value.trim();
+        const phone = document.getElementById('profile-phone').value.trim();
+        const messageDiv = document.getElementById('profile-message');
+        
+        // Validation
+        if (!email) {
+            messageDiv.innerHTML = '<div class="alert alert-danger">Email is required</div>';
+            return;
+        }
+        
+        if (!phone) {
+            messageDiv.innerHTML = '<div class="alert alert-danger">Phone is required</div>';
+            return;
+        }
+        
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            messageDiv.innerHTML = '<div class="alert alert-danger">Please enter a valid email address</div>';
+            return;
+        }
+        
+        // Show loading
+        messageDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Updating profile...</div>';
+        
+        try {
+            // Call backend to update profile
+            const response = await fetch(`${CONFIG.API_URL}?action=updateProfile&staffId=${this.currentUser.staffId}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                // Update local user data
+                this.currentUser.email = email;
+                this.currentUser.phone = phone;
+                this.saveUser(this.currentUser);
+                
+                // Show success message
+                messageDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Profile updated successfully!</div>';
+                
+                // Close modal after 2 seconds
+                setTimeout(() => {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('profileEditModal'));
+                    if (modal) modal.hide();
+                    messageDiv.innerHTML = '';
+                }, 2000);
+            } else {
+                messageDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ${data.message || 'Update failed'}</div>`;
+            }
+        } catch (error) {
+            console.error('Profile update error:', error);
+            messageDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Error updating profile. Please try again.</div>';
+        }
+    }
 }
 
 // Initialize auth manager globally
