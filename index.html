@@ -128,6 +128,9 @@
                         <div id="sidebar-user-info" class="text-center mb-3">
                             <!-- User info will be added here by auth.js -->
                         </div>
+                        <button class="btn btn-secondary w-100 mb-2" onclick="authManager.openProfileEdit()">
+                            <i class="fas fa-cog"></i> Edit Profile
+                        </button>
                         <button class="btn btn-danger w-100" onclick="authManager.logout()">
                             <i class="fas fa-sign-out-alt"></i> Logout
                         </button>
@@ -529,5 +532,66 @@
             };
         }
     </script>
+
+    <!-- Profile Edit Modal -->
+    <div class="modal fade" id="profileEditModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-user-edit"></i> Edit Profile</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="profile-edit-form">
+                        <!-- Non-editable fields -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Staff ID</label>
+                            <input type="text" class="form-control" id="profile-staff-id" readonly disabled>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Name</label>
+                            <input type="text" class="form-control" id="profile-name" readonly disabled>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Department</label>
+                            <input type="text" class="form-control" id="profile-department" readonly disabled>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Editable fields -->
+                        <div class="mb-3">
+                            <label for="profile-email" class="form-label fw-bold">
+                                Email <span class="text-danger">*</span>
+                            </label>
+                            <input type="email" class="form-control" id="profile-email" required>
+                            <small class="form-text text-muted">You can update your email address</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="profile-phone" class="form-label fw-bold">
+                                Phone <span class="text-danger">*</span>
+                            </label>
+                            <input type="tel" class="form-control" id="profile-phone" required>
+                            <small class="form-text text-muted">You can update your phone number</small>
+                        </div>
+                        
+                        <div id="profile-message" class="mt-3"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="authManager.saveProfile()">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
