@@ -195,6 +195,31 @@
                 <section id="dashboard" class="mb-5">
                     <h2 class="mb-3"><i class="fas fa-chart-pie"></i> CPD Activity Dashboard & Reports</h2>
 
+                    <!-- Year Filter Bar -->
+                    <div class="card shadow-sm mb-4 border-primary">
+                        <div class="card-body bg-light">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    <label for="year-filter" class="form-label fw-bold mb-0">
+                                        <i class="fas fa-calendar-alt text-primary"></i> Filter by Year:
+                                    </label>
+                                </div>
+                                <div class="col-md-3">
+                                    <select id="year-filter" class="form-select form-select-lg border-primary" onchange="app.filterDashboardByYear()">
+                                        <!-- Options will be populated dynamically -->
+                                    </select>
+                                </div>
+                                <div class="col-md-7">
+                                    <div class="alert alert-info mb-0 py-2 border-info">
+                                        <span id="year-filter-info">
+                                            <i class="fas fa-calendar-check"></i> Showing data for current year
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="dashboard-loading" class="loading">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
