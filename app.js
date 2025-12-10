@@ -558,7 +558,7 @@ class NursingCPDApp {
     }
 
     // Dashboard
-    async loadDashboard() {
+    async loadDashboard(selectedYear = null) {
         const loadingEl = document.getElementById('dashboard-loading');
         const contentEl = document.getElementById('dashboard-content');
 
@@ -571,7 +571,13 @@ class NursingCPDApp {
                 throw new Error('API URL not configured. Please update config.js with your Google Apps Script URL.');
             }
 
-            const response = await fetch(`${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_DASHBOARD}`);
+            // Build URL with optional year parameter
+            let url = `${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_DASHBOARD}`;
+            if (selectedYear) {
+                url += `&year=${selectedYear}`;
+            }
+
+            const response = await fetch(url);
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -581,6 +587,27 @@ class NursingCPDApp {
             console.log('Dashboard data received:', data); // Debug log
 
             if (data.success) {
+                // Populate year filter dropdown if not already done
+                if (data.filterInfo && data.filterInfo.availableYears) {
+                    this.populateYearFilter(data.filterInfo);
+                }
+                
+                // Update filter info display
+                if (data.filterInfo) {
+                    const infoEl = document.getElementById('year-filter-info');
+                    if (infoEl) {
+                        if (data.filterInfo.showAllYears) {
+                            infoEl.innerHTML = `<i class="fas fa-globe"></i> Showing data for <strong>all years</strong> (${data.filterInfo.availableYears.join(', ')})`;
+                        } else {
+                            const year = data.filterInfo.selectedYear;
+                            const isCurrent = year === data.filterInfo.currentYear;
+                            infoEl.innerHTML = isCurrent ? 
+                                `<i class="fas fa-calendar-check"></i> Showing data for current year (<strong>${year}</strong>)` :
+                                `<i class="fas fa-filter"></i> Filtered by year: <strong>${year}</strong>`;
+                        }
+                    }
+                }
+                
                 // Update KPIs
                 this.displayKPIs(data.kpis);
                 
@@ -637,6 +664,56 @@ class NursingCPDApp {
                 loadingEl.style.display = 'block';
             }
         }
+    }
+
+    populateYearFilter(filterInfo) {
+        const yearSelect = document.getElementById('year-filter');
+        if (!yearSelect) return;
+        
+        // Only populate once
+        if (yearSelect.options.length > 0) {
+            // Update selected value
+            yearSelect.value = filterInfo.selectedYear.toString();
+            return;
+        }
+        
+        // Add "All Years" option
+        const allOption = document.createElement('option');
+        allOption.value = '';
+        allOption.textContent = 'All Years';
+        yearSelect.appendChild(allOption);
+        
+        // Add year options
+        filterInfo.availableYears.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            if (year === filterInfo.selectedYear) {
+                option.selected = true;
+            }
+            yearSelect.appendChild(option);
+        });
+    }
+
+    filterDashboardByYear() {
+        const yearSelect = document.getElementById('year-filter');
+        if (!yearSelect) return;
+        
+        const selectedYear = yearSelect.value;
+        console.log('Filtering dashboard by year:', selectedYear || 'All Years');
+        
+        // Update info message immediately
+        const infoEl = document.getElementById('year-filter-info');
+        if (infoEl) {
+            if (selectedYear === '') {
+                infoEl.innerHTML = '<i class="fas fa-globe"></i> Showing data for <strong>all years</strong>';
+            } else {
+                infoEl.innerHTML = `<i class="fas fa-filter"></i> Filtering data for year: <strong>${selectedYear}</strong>`;
+            }
+        }
+        
+        // Reload dashboard with selected year
+        this.loadDashboard(selectedYear || null);
     }
 
     displayKPIs(kpis) {
