@@ -143,6 +143,26 @@ class AuthManager {
         if (!permissions.canRegister) {
             this.disableRegistration();
         }
+        
+        // Show create buttons for Admins only
+        if (this.isAdmin()) {
+            this.showAdminButtons();
+        }
+    }
+    
+    /**
+     * Show admin-only buttons (Create Event, Create Announcement)
+     */
+    showAdminButtons() {
+        const addEventBtn = document.getElementById('add-event-btn-container');
+        const addAnnouncementBtn = document.getElementById('add-announcement-btn-container');
+        
+        if (addEventBtn) {
+            addEventBtn.style.display = 'block';
+        }
+        if (addAnnouncementBtn) {
+            addAnnouncementBtn.style.display = 'block';
+        }
     }
     
     /**
