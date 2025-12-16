@@ -487,93 +487,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-    <script src="config.js"></script>
-    <script src="auth.js"></script>
-    <script src="app.js"></script>
-
-    <script>
-        // Display current date
-        document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-
-        // Sidebar navigation
-        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                // Update active link
-                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Show corresponding section
-                const sectionId = this.getAttribute('data-section');
-                document.querySelectorAll('main section').forEach(section => {
-                    section.classList.remove('active');
-                });
-                document.getElementById(sectionId).classList.add('active');
-                
-                // Trigger section-specific actions
-                if (sectionId === 'calendar' && !window.calendarInitialized) {
-                    app.initCalendar();
-                } else if (sectionId === 'dashboard') {
-                    app.loadDashboard();
-                } else if (sectionId === 'leaders') {
-                    app.loadLeaders();
-                }
-            });
-        });
-
-        // Override app.showSection to work with Bootstrap layout
-        if (typeof app !== 'undefined') {
-            const originalShowSection = app.showSection;
-            app.showSection = function(sectionId) {
-                // Map section IDs
-                const sectionMap = {
-                    'events': 'main-page',
-                    'register': 'registration',
-                    'calendar': 'calendar',
-                    'dashboard': 'dashboard',
-                    'leaders': 'leaders'
-                };
-                
-                const targetSection = sectionMap[sectionId] || sectionId;
-                
-                // Update sidebar navigation
-                document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('data-section') === targetSection) {
-                        link.classList.add('active');
-                    }
-                });
-                
-                // Show section
-                document.querySelectorAll('main section').forEach(section => {
-                    section.classList.remove('active');
-                });
-                const section = document.getElementById(targetSection);
-                if (section) {
-                    section.classList.add('active');
-                }
-                
-                // Trigger section-specific actions
-                if (targetSection === 'calendar' && !window.calendarInitialized) {
-                    this.initCalendar();
-                } else if (targetSection === 'dashboard') {
-                    this.loadDashboard();
-                } else if (targetSection === 'leaders') {
-                    this.loadLeaders();
-                }
-            };
-        }
-    </script>
-
     <!-- Create CPD Event Modal -->
     <div class="modal fade" id="createEventModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -852,6 +765,95 @@
             </div>
         </div>
     </div>
+
+</body>
+</html>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        // Display current date
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+
+        // Sidebar navigation
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Update active link
+                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show corresponding section
+                const sectionId = this.getAttribute('data-section');
+                document.querySelectorAll('main section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById(sectionId).classList.add('active');
+                
+                // Trigger section-specific actions
+                if (sectionId === 'calendar' && !window.calendarInitialized) {
+                    app.initCalendar();
+                } else if (sectionId === 'dashboard') {
+                    app.loadDashboard();
+                } else if (sectionId === 'leaders') {
+                    app.loadLeaders();
+                }
+            });
+        });
+
+        // Override app.showSection to work with Bootstrap layout
+        if (typeof app !== 'undefined') {
+            const originalShowSection = app.showSection;
+            app.showSection = function(sectionId) {
+                // Map section IDs
+                const sectionMap = {
+                    'events': 'main-page',
+                    'register': 'registration',
+                    'calendar': 'calendar',
+                    'dashboard': 'dashboard',
+                    'leaders': 'leaders'
+                };
+                
+                const targetSection = sectionMap[sectionId] || sectionId;
+                
+                // Update sidebar navigation
+                document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('data-section') === targetSection) {
+                        link.classList.add('active');
+                    }
+                });
+                
+                // Show section
+                document.querySelectorAll('main section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                const section = document.getElementById(targetSection);
+                if (section) {
+                    section.classList.add('active');
+                }
+                
+                // Trigger section-specific actions
+                if (targetSection === 'calendar' && !window.calendarInitialized) {
+                    this.initCalendar();
+                } else if (targetSection === 'dashboard') {
+                    this.loadDashboard();
+                } else if (targetSection === 'leaders') {
+                    this.loadLeaders();
+                }
+            };
+        }
+    </script>
 
 </body>
 </html>
