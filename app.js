@@ -1211,6 +1211,170 @@ class NursingCPDApp {
         div.textContent = text;
         return div.innerHTML;
     }
+    
+    /**
+     * Open Create Event Modal (Admin only)
+     */
+    openCreateEventModal() {
+        // Clear form
+        document.getElementById('create-event-form').reset();
+        document.getElementById('create-event-message').innerHTML = '';
+        
+        // Set default date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('event-date').valueAsDate = tomorrow;
+        
+        // Set default expiry date (30 days from now) if exists
+        const expiryInput = document.getElementById('announcement-expiry');
+        if (expiryInput) {
+            const expiry = new Date();
+            expiry.setDate(expiry.getDate() + 30);
+            expiryInput.valueAsDate = expiry;
+        }
+        
+        // Open modal
+        const modal = new bootstrap.Modal(document.getElementById('createEventModal'));
+        modal.show();
+    }
+    
+    /**
+     * Create new CPD event
+     */
+    async createEvent() {
+        const messageDiv = document.getElementById('create-event-message');
+        
+        // Get form values
+        const eventData = {
+            eventId: document.getElementById('event-id').value.trim(),
+            eventName: document.getElementById('event-name').value.trim(),
+            eventDate: document.getElementById('event-date').value,
+            duration: document.getElementById('event-duration').value,
+            department: document.getElementById('event-department').value.trim(),
+            unit: document.getElementById('event-unit').value.trim(),
+            maxCapacity: document.getElementById('event-capacity').value,
+            approvalStatus: document.getElementById('event-status').value,
+            description: document.getElementById('event-description').value.trim(),
+            venue: document.getElementById('event-venue').value.trim(),
+            facilitator: document.getElementById('event-facilitator').value.trim()
+        };
+        
+        // Validation
+        if (!eventData.eventId || !eventData.eventName || !eventData.eventDate || 
+            !eventData.duration || !eventData.department || !eventData.maxCapacity || 
+            !eventData.approvalStatus) {
+            messageDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Please fill in all required fields</div>';
+            return;
+        }
+        
+        // Show loading
+        messageDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Creating event...</div>';
+        
+        try {
+            // Build query string
+            const params = new URLSearchParams({
+                action: 'createEvent',
+                ...eventData
+            });
+            
+            const response = await fetch(`${CONFIG.API_URL}?${params.toString()}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                messageDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Event created successfully!</div>';
+                
+                // Close modal after 2 seconds and reload events
+                setTimeout(() => {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createEventModal'));
+                    if (modal) modal.hide();
+                    messageDiv.innerHTML = '';
+                    this.loadEvents(); // Reload events list
+                }, 2000);
+            } else {
+                messageDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ${data.message || 'Failed to create event'}</div>`;
+            }
+        } catch (error) {
+            console.error('Create event error:', error);
+            messageDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Error creating event. Please try again.</div>';
+        }
+    }
+    
+    /**
+     * Open Create Announcement Modal (Admin only)
+     */
+    openCreateAnnouncementModal() {
+        // Clear form
+        document.getElementById('create-announcement-form').reset();
+        document.getElementById('create-announcement-message').innerHTML = '';
+        
+        // Set default expiry date (30 days from now)
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 30);
+        document.getElementById('announcement-expiry').valueAsDate = expiry;
+        
+        // Set default status to Active
+        document.getElementById('announcement-status').value = 'Active';
+        
+        // Open modal
+        const modal = new bootstrap.Modal(document.getElementById('createAnnouncementModal'));
+        modal.show();
+    }
+    
+    /**
+     * Create new announcement
+     */
+    async createAnnouncement() {
+        const messageDiv = document.getElementById('create-announcement-message');
+        
+        // Get form values
+        const announcementData = {
+            id: document.getElementById('announcement-id').value.trim(),
+            title: document.getElementById('announcement-title').value.trim(),
+            message: document.getElementById('announcement-message').value.trim(),
+            priority: document.getElementById('announcement-priority').value,
+            expiryDate: document.getElementById('announcement-expiry').value,
+            status: document.getElementById('announcement-status').value
+        };
+        
+        // Validation
+        if (!announcementData.id || !announcementData.title || !announcementData.message || 
+            !announcementData.priority || !announcementData.expiryDate || !announcementData.status) {
+            messageDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Please fill in all required fields</div>';
+            return;
+        }
+        
+        // Show loading
+        messageDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Creating announcement...</div>';
+        
+        try {
+            // Build query string
+            const params = new URLSearchParams({
+                action: 'createAnnouncement',
+                ...announcementData,
+                createdBy: authManager.currentUser ? authManager.currentUser.name : 'Admin'
+            });
+            
+            const response = await fetch(`${CONFIG.API_URL}?${params.toString()}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                messageDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Announcement created successfully!</div>';
+                
+                // Close modal after 2 seconds and reload announcements
+                setTimeout(() => {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createAnnouncementModal'));
+                    if (modal) modal.hide();
+                    messageDiv.innerHTML = '';
+                    this.loadAnnouncements(); // Reload announcements list
+                }, 2000);
+            } else {
+                messageDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ${data.message || 'Failed to create announcement'}</div>`;
+            }
+        } catch (error) {
+            console.error('Create announcement error:', error);
+            messageDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Error creating announcement. Please try again.</div>';
+        }
+    }
 }
 
 // Initialize app when DOM is ready
