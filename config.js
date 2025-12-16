@@ -2,7 +2,8 @@
 // Replace the API_URL with your deployed Google Apps Script Web App URL
 
 const CONFIG = {
-    API_URL: 'https://script.google.com/macros/s/AKfycbxkdOHA7OO3shJtvYelQNDPGeoEY8v7eDwAVW1FNUEKmbGZ3nfSDdRWrDalMIEYCpgBMQ/exec',
+    // 🔧 IMPORTANT: Replace this with your Google Apps Script deployment URL
+    API_URL: 'https://script.google.com/macros/s/AKfycbznxBk3g-CDdvZ3elp9tGOcNuPoux-utl4OEMOw_uM_yUlUgtruz1L9_bkEyW6yqEO8HA/exec',
     
     // Application Settings
     APP_NAME: 'Nursing CPD Portal',
@@ -39,7 +40,9 @@ const CONFIG = {
         GET_STAFF_BY_DEPARTMENT: 'getStaffByDepartment',
         GET_LEADERS: 'getBoardOfLeaders',
         GET_ANNOUNCEMENTS: 'getAnnouncements',
-        UPDATE_PROFILE: 'updateProfile'
+        UPDATE_PROFILE: 'updateProfile',
+        CREATE_EVENT: 'createEvent',
+        CREATE_ANNOUNCEMENT: 'createAnnouncement'
     }
 };
 
