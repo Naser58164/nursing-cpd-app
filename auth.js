@@ -101,6 +101,13 @@ class AuthManager {
     }
     
     /**
+     * Check if current user is Admin
+     */
+    isAdmin() {
+        return this.currentUser && this.currentUser.role === 'Admin';
+    }
+    
+    /**
      * Apply role-based restrictions to UI
      */
     applyRoleRestrictions() {
