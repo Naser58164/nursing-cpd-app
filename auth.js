@@ -345,4 +345,19 @@ class AuthManager {
 }
 
 // Initialize auth manager globally
-const authManager = new AuthManager();
+// Create a placeholder immediately to prevent "undefined" errors
+let authManager = {
+    openProfileEdit: () => console.log('Auth manager not ready yet'),
+    logout: () => console.log('Auth manager not ready yet'),
+    saveProfile: () => console.log('Auth manager not ready yet')
+};
+
+// Initialize properly when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        authManager = new AuthManager();
+    });
+} else {
+    // DOM already loaded, initialize now
+    authManager = new AuthManager();
+}
