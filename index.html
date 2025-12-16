@@ -155,8 +155,17 @@
 
                 <!-- Main Page Section -->
                 <section id="main-page" class="mb-5 active">
-                    <h2><i class="fas fa-list-ul"></i> Upcoming CPD Events</h2>
-                    <p class="text-muted">Showing events from today onwards. Register early to secure your spot in mandatory and approved events.</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2><i class="fas fa-list-ul"></i> Upcoming CPD Events</h2>
+                            <p class="text-muted mb-0">Showing events from today onwards. Register early to secure your spot in mandatory and approved events.</p>
+                        </div>
+                        <div id="add-event-btn-container" style="display: none;">
+                            <button class="btn btn-success btn-lg" onclick="app.openCreateEventModal()" title="Create New CPD Event">
+                                <i class="fas fa-plus-circle"></i> Create Event
+                            </button>
+                        </div>
+                    </div>
                     
                     <!-- Filters -->
                     <div class="row mb-3">
@@ -433,7 +442,14 @@
                     </section>
 
                     <section id="announcements" class="col-md-6">
-                        <h2><i class="fas fa-bullhorn"></i> Announcements</h2>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="mb-0"><i class="fas fa-bullhorn"></i> Announcements</h2>
+                            <div id="add-announcement-btn-container" style="display: none;">
+                                <button class="btn btn-success" onclick="app.openCreateAnnouncementModal()" title="Create New Announcement">
+                                    <i class="fas fa-plus-circle"></i> New
+                                </button>
+                            </div>
+                        </div>
                         
                         <div id="announcements-loading" class="loading">
                             <div class="spinner-border text-primary" role="status">
@@ -557,6 +573,225 @@
             };
         }
     </script>
+
+    <!-- Create CPD Event Modal -->
+    <div class="modal fade" id="createEventModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Create New CPD Event</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-event-form">
+                        <div class="row">
+                            <!-- Event ID -->
+                            <div class="col-md-6 mb-3">
+                                <label for="event-id" class="form-label fw-bold">
+                                    Event ID <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="event-id" required 
+                                       placeholder="e.g., EVT2025-001">
+                                <small class="form-text text-muted">Unique identifier for the event</small>
+                            </div>
+                            
+                            <!-- Event Name -->
+                            <div class="col-md-6 mb-3">
+                                <label for="event-name" class="form-label fw-bold">
+                                    Event Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="event-name" required 
+                                       placeholder="e.g., Advanced Wound Care">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Event Date -->
+                            <div class="col-md-6 mb-3">
+                                <label for="event-date" class="form-label fw-bold">
+                                    Event Date <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="event-date" required>
+                            </div>
+                            
+                            <!-- Duration -->
+                            <div class="col-md-6 mb-3">
+                                <label for="event-duration" class="form-label fw-bold">
+                                    Duration (Hours) <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" class="form-control" id="event-duration" required 
+                                       min="0.5" step="0.5" placeholder="e.g., 4">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Department -->
+                            <div class="col-md-6 mb-3">
+                                <label for="event-department" class="form-label fw-bold">
+                                    Department <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="event-department" required 
+                                       placeholder="e.g., Nursing Department">
+                            </div>
+                            
+                            <!-- Unit -->
+                            <div class="col-md-6 mb-3">
+                                <label for="event-unit" class="form-label fw-bold">Unit</label>
+                                <input type="text" class="form-control" id="event-unit" 
+                                       placeholder="e.g., Emergency Department">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Max Capacity -->
+                            <div class="col-md-6 mb-3">
+                                <label for="event-capacity" class="form-label fw-bold">
+                                    Max Capacity <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" class="form-control" id="event-capacity" required 
+                                       min="1" value="50" placeholder="e.g., 50">
+                            </div>
+                            
+                            <!-- Approval Status -->
+                            <div class="col-md-6 mb-3">
+                                <label for="event-status" class="form-label fw-bold">
+                                    Approval Status <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="event-status" required>
+                                    <option value="">Select status...</option>
+                                    <option value="Approved">Approved</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Rejected">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="event-description" class="form-label fw-bold">Description</label>
+                            <textarea class="form-control" id="event-description" rows="3" 
+                                      placeholder="Brief description of the event..."></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Venue -->
+                            <div class="col-md-6 mb-3">
+                                <label for="event-venue" class="form-label fw-bold">Venue</label>
+                                <input type="text" class="form-control" id="event-venue" 
+                                       placeholder="e.g., Training Hall A">
+                            </div>
+                            
+                            <!-- Facilitator -->
+                            <div class="col-md-6 mb-3">
+                                <label for="event-facilitator" class="form-label fw-bold">Facilitator</label>
+                                <input type="text" class="form-control" id="event-facilitator" 
+                                       placeholder="e.g., Dr. Ahmed Al-Balushi">
+                            </div>
+                        </div>
+                        
+                        <div id="create-event-message" class="mt-3"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="app.createEvent()">
+                        <i class="fas fa-save"></i> Create Event
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Announcement Modal -->
+    <div class="modal fade" id="createAnnouncementModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Create New Announcement</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-announcement-form">
+                        <!-- ID -->
+                        <div class="mb-3">
+                            <label for="announcement-id" class="form-label fw-bold">
+                                Announcement ID <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="announcement-id" required 
+                                   placeholder="e.g., ANN2025-001">
+                            <small class="form-text text-muted">Unique identifier for the announcement</small>
+                        </div>
+                        
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label for="announcement-title" class="form-label fw-bold">
+                                Title <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="announcement-title" required 
+                                   placeholder="e.g., CPD Deadline Reminder">
+                        </div>
+                        
+                        <!-- Message -->
+                        <div class="mb-3">
+                            <label for="announcement-message" class="form-label fw-bold">
+                                Message <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="announcement-message" rows="4" required 
+                                      placeholder="Enter announcement message..."></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Priority -->
+                            <div class="col-md-6 mb-3">
+                                <label for="announcement-priority" class="form-label fw-bold">
+                                    Priority <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="announcement-priority" required>
+                                    <option value="">Select priority...</option>
+                                    <option value="High">🔴 High</option>
+                                    <option value="Medium">🟡 Medium</option>
+                                    <option value="Normal">🔵 Normal</option>
+                                    <option value="Low">⚪ Low</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Expiry Date -->
+                            <div class="col-md-6 mb-3">
+                                <label for="announcement-expiry" class="form-label fw-bold">
+                                    Expiry Date <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="announcement-expiry" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Status -->
+                        <div class="mb-3">
+                            <label for="announcement-status" class="form-label fw-bold">
+                                Status <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="announcement-status" required>
+                                <option value="">Select status...</option>
+                                <option value="Active" selected>Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                        
+                        <div id="create-announcement-message" class="mt-3"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="app.createAnnouncement()">
+                        <i class="fas fa-save"></i> Create Announcement
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Profile Edit Modal -->
     <div class="modal fade" id="profileEditModal" tabindex="-1">
