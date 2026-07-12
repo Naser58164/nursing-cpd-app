@@ -695,13 +695,13 @@ class NursingCPDApp {
         });
     }
 
-    filterDashboardByYear() {
+    async filterDashboardByYear() {
         const yearSelect = document.getElementById('year-filter');
         if (!yearSelect) return;
-        
+
         const selectedYear = yearSelect.value;
         console.log('Filtering dashboard by year:', selectedYear || 'All Years');
-        
+
         // Update info message immediately
         const infoEl = document.getElementById('year-filter-info');
         if (infoEl) {
@@ -711,9 +711,90 @@ class NursingCPDApp {
                 infoEl.innerHTML = `<i class="fas fa-filter"></i> Filtering data for year: <strong>${selectedYear}</strong>`;
             }
         }
-        
+
         // Reload dashboard with selected year
-        this.loadDashboard(selectedYear || null);
+        await this.loadDashboard(selectedYear || null);
+
+        // loadDashboard() just redrew the summary table with all staff categories;
+        // re-apply the staff-category filter (if the user has one active) on top of it.
+        const allCategories = this.getAllStaffCategories();
+        const selectedCategories = this.getSelectedStaffCategories();
+        if (selectedCategories.length !== allCategories.length) {
+            this.refreshDepartmentSummary(selectedCategories, allCategories);
+        }
+    }
+
+    // ===== Department Summary staff-category filter =====
+
+    getAllStaffCategories() {
+        return Array.from(document.querySelectorAll('.staff-category-checkbox')).map(box => box.value);
+    }
+
+    getSelectedStaffCategories() {
+        return Array.from(document.querySelectorAll('.staff-category-checkbox'))
+            .filter(box => box.checked)
+            .map(box => box.value);
+    }
+
+    selectAllStaffCategories() {
+        document.querySelectorAll('.staff-category-checkbox').forEach(box => box.checked = true);
+        this.onStaffCategoryFilterChange();
+    }
+
+    onStaffCategoryFilterChange() {
+        const allCategories = this.getAllStaffCategories();
+        const selectedCategories = this.getSelectedStaffCategories();
+
+        const labelEl = document.getElementById('staff-category-filter-label');
+        if (labelEl) {
+            if (selectedCategories.length === 0) {
+                labelEl.textContent = 'None';
+            } else if (selectedCategories.length === allCategories.length) {
+                labelEl.textContent = 'All';
+            } else {
+                labelEl.textContent = selectedCategories.join(', ');
+            }
+        }
+
+        this.refreshDepartmentSummary(selectedCategories, allCategories);
+    }
+
+    async refreshDepartmentSummary(selectedCategories, allCategories) {
+        const tableBody = document.getElementById('departmentSummaryTable')?.querySelector('tbody');
+        if (!tableBody) return;
+
+        if (selectedCategories.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Select at least one staff category to view data.</td></tr>';
+            return;
+        }
+
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center"><span class="spinner-border spinner-border-sm"></span> Loading...</td></tr>';
+
+        try {
+            const yearSelect = document.getElementById('year-filter');
+            const selectedYear = yearSelect ? yearSelect.value : '';
+
+            let url = `${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_DEPARTMENT_SUMMARY}`;
+            if (selectedYear) url += `&year=${selectedYear}`;
+            // Omitting "positions" when every category is selected keeps the default
+            // "show all staff" behavior exactly as before (including any designation
+            // that doesn't map to a known category).
+            if (selectedCategories.length < allCategories.length) {
+                url += `&positions=${encodeURIComponent(selectedCategories.join(','))}`;
+            }
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.success) {
+                this.displayDepartmentSummaryTable(data.departmentSummary);
+            } else {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${this.escapeHtml(data.message || 'Failed to load data')}</td></tr>`;
+            }
+        } catch (error) {
+            console.error('Error loading department summary:', error);
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Failed to load data</td></tr>';
+        }
     }
 
     displayKPIs(kpis) {

@@ -36,6 +36,7 @@ const CONFIG = {
         GET_EVENTS: 'getUpcomingEvents',
         REGISTER_STAFF: 'registerStaff',
         GET_DASHBOARD: 'getDashboardData',
+        GET_DEPARTMENT_SUMMARY: 'getDepartmentSummary',
         GET_STAFF: 'getStaffDetails',
         GET_STAFF_BY_DEPARTMENT: 'getStaffByDepartment',
         GET_LEADERS: 'getBoardOfLeaders',
