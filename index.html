@@ -361,23 +361,23 @@
                                         data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                     <i class="fas fa-filter"></i> Staff Category: <span id="staff-category-filter-label">All</span>
                                 </button>
-                                <ul class="dropdown-menu p-2" id="staff-category-filter-menu" aria-labelledby="staff-category-filter-btn" style="min-width: 240px;">
-                                    <li>
-                                        <div class="form-check">
-                                            <input class="form-check-input staff-category-checkbox" type="checkbox" value="Nurse" id="staff-cat-nurse" checked onchange="app.onStaffCategoryFilterChange()">
-                                            <label class="form-check-label" for="staff-cat-nurse">Nurse <small class="text-muted">(GN, SN, GN A, ...)</small></label>
-                                        </div>
-                                    </li>
+                                <ul class="dropdown-menu p-2" id="staff-category-filter-menu" aria-labelledby="staff-category-filter-btn" style="min-width: 280px;">
                                     <li>
                                         <div class="form-check">
                                             <input class="form-check-input staff-category-checkbox" type="checkbox" value="Medical Orderly" id="staff-cat-mo" checked onchange="app.onStaffCategoryFilterChange()">
-                                            <label class="form-check-label" for="staff-cat-mo">Medical Orderly <small class="text-muted">(M.O)</small></label>
+                                            <label class="form-check-label" for="staff-cat-mo">Medical Orderly <small class="text-muted">(MO "A", MO "B", MO, SMO "A", SMO "B")</small></label>
                                         </div>
                                     </li>
                                     <li>
                                         <div class="form-check">
-                                            <input class="form-check-input staff-category-checkbox" type="checkbox" value="HCA" id="staff-cat-hca" checked onchange="app.onStaffCategoryFilterChange()">
-                                            <label class="form-check-label" for="staff-cat-hca">Healthcare Assistant <small class="text-muted">(HCA)</small></label>
+                                            <input class="form-check-input staff-category-checkbox" type="checkbox" value="Healthcare Assistant" id="staff-cat-hca" checked onchange="app.onStaffCategoryFilterChange()">
+                                            <label class="form-check-label" for="staff-cat-hca">Healthcare Assistant <small class="text-muted">(Senior Health Ass., HCA)</small></label>
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <div class="form-check">
+                                            <input class="form-check-input staff-category-checkbox" type="checkbox" value="Staff Nurse" id="staff-cat-sn" checked onchange="app.onStaffCategoryFilterChange()">
+                                            <label class="form-check-label" for="staff-cat-sn">Staff Nurse <small class="text-muted">(GN, GN "A", GN "B", SGN "B", SGN "J", SN, SN "A", Spl. N)</small></label>
                                         </div>
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
