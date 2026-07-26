@@ -345,16 +345,58 @@ function getStaffByDepartment(department) {
 }
 
 /**
+ * Strips periods, quote characters (straight and curly), and all whitespace,
+ * then upper-cases - so Designation values that only differ in punctuation
+ * or spacing (e.g. `MO "A"`, `MO A`, `MO"A"`) all resolve to the same
+ * lookup key. The List sheet's Designation column is entered by hand and
+ * varies in exactly these ways.
+ */
+function normalizeDesignationKey(designation) {
+  return (designation || '')
+    .toString()
+    .toUpperCase()
+    .replace(/[."'‘’“”]/g, '')
+    .replace(/\s+/g, '');
+}
+
+function buildDesignationLookup(rawDesignations) {
+  var lookup = {};
+  rawDesignations.forEach(function(raw) {
+    lookup[normalizeDesignationKey(raw)] = true;
+  });
+  return lookup;
+}
+
+// Known Designation values (List sheet Column D) for each staff-category
+// filter bucket. Update these lists (not getStaffCategory itself) if new
+// designation variants show up in the sheet.
+var MEDICAL_ORDERLY_DESIGNATIONS = buildDesignationLookup([
+  'MO "A"', 'MO "B"', 'MO', 'SMO "A"', 'SMO "B"'
+]);
+
+var HEALTHCARE_ASSISTANT_DESIGNATIONS = buildDesignationLookup([
+  'Senior Health Ass.', 'HCA'
+]);
+
+var STAFF_NURSE_DESIGNATIONS = buildDesignationLookup([
+  'GN', 'GN "B"', 'GN "A"', 'SGN "B"', 'SGN "J"', 'SN', 'SN"A"', 'Spl. N'
+]);
+
+/**
  * Categorize a raw Designation (List sheet Column D) into a staff-type
- * bucket used by the Department Summary staff-category filter.
- * Anything that doesn't match a known prefix falls into 'Other' so it is
- * still counted when no filter (or all categories) is selected.
+ * bucket used by the Department Summary staff-category filter. Matching is
+ * done against a normalized key (see normalizeDesignationKey) rather than a
+ * raw string/prefix match, since the sheet's Designation text varies in
+ * quoting and spacing.
+ * Anything that doesn't match a known designation falls into 'Other' so it
+ * is still counted when no filter (or every category) is selected.
  */
 function getStaffCategory(designation) {
-  var d = (designation || '').toString().trim().toUpperCase();
-  if (d.indexOf('HCA') === 0) return 'HCA';
-  if (d.indexOf('M.O') === 0 || d.indexOf('MO') === 0) return 'Medical Orderly';
-  if (d.indexOf('GN') === 0 || d.indexOf('SN') === 0) return 'Nurse';
+  var key = normalizeDesignationKey(designation);
+  if (!key) return 'Other';
+  if (MEDICAL_ORDERLY_DESIGNATIONS[key]) return 'Medical Orderly';
+  if (HEALTHCARE_ASSISTANT_DESIGNATIONS[key]) return 'Healthcare Assistant';
+  if (STAFF_NURSE_DESIGNATIONS[key]) return 'Staff Nurse';
   return 'Other';
 }
 
@@ -610,11 +652,12 @@ function getDashboardData(filterYear) {
 
 /**
  * Get the Department Summary table only, optionally restricted to a set of
- * staff categories (Nurse / Medical Orderly / HCA - see getStaffCategory).
- * Used by the Department Summary staff-category filter so toggling it
- * doesn't have to re-fetch and redraw the whole dashboard (KPIs/charts).
+ * staff categories (Medical Orderly / Healthcare Assistant / Staff Nurse -
+ * see getStaffCategory). Used by the Department Summary staff-category
+ * filter so toggling it doesn't have to re-fetch and redraw the whole
+ * dashboard (KPIs/charts).
  *
- * filterPositions: comma-separated category names (e.g. "Nurse,HCA").
+ * filterPositions: comma-separated category names (e.g. "Staff Nurse,HCA").
  * Omitted/empty means no filter - every staff member counts, including any
  * designation that doesn't map to a known category - matching the default
  * "show all" behavior of getDashboardData's departmentSummary.
