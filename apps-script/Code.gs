@@ -14,7 +14,7 @@ function doGet(e) {
       case 'getUpcomingEvents':
         return getUpcomingEvents();
       case 'getDashboardData':
-        return getDashboardData(e.parameter.year);
+        return getDashboardData(e.parameter.year, e.parameter.department, e.parameter.unit);
       case 'getDepartmentSummary':
         return getDepartmentSummary(e.parameter.year, e.parameter.positions);
       case 'getStaffDetails':
@@ -401,7 +401,7 @@ function getStaffCategory(designation) {
 }
 
 // Get dashboard data
-function getDashboardData(filterYear) {
+function getDashboardData(filterYear, filterDepartment, filterUnit) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var listSheet = ss.getSheetByName('List');
   var registrationSheet = ss.getSheetByName('registration');
@@ -423,6 +423,9 @@ function getDashboardData(filterYear) {
   var selectedYear = filterYear ? parseInt(filterYear) : currentYear;
   var showAllYears = !filterYear; // If filterYear is null/empty, show all years
 
+  filterDepartment = filterDepartment ? filterDepartment.toString().trim() : '';
+  filterUnit = filterUnit ? filterUnit.toString().trim() : '';
+
   // Get available years from CPD events
   var availableYears = {};
   for (var i = 1; i < cpdData.length; i++) {
@@ -436,26 +439,50 @@ function getDashboardData(filterYear) {
   // Convert to sorted array
   var yearsArray = Object.keys(availableYears).map(function(y) { return parseInt(y); }).sort(function(a, b) { return b - a; });
 
-  // Filter events by year (or include all if showAllYears)
+  // Get available departments/units from the full staff roster (List sheet),
+  // independent of any filter, so the dropdowns always offer every choice.
+  var availableDepartmentsSet = {};
+  var availableUnitsSet = {};
+  for (var i = 1; i < listData.length; i++) {
+    var staffDept = listData[i][5]; // Column F: Department
+    var staffUnit = listData[i][6]; // Column G: Unit
+    if (staffDept) availableDepartmentsSet[staffDept.toString().trim()] = true;
+    if (staffUnit) availableUnitsSet[staffUnit.toString().trim()] = true;
+  }
+  var availableDepartments = Object.keys(availableDepartmentsSet).sort();
+  var availableUnits = Object.keys(availableUnitsSet).sort();
+
+  // Filter events by year and, if selected, by the event's own Department/Unit
+  // (CPD sheet Columns E/F) - mirrors the year filter's approach. Also track
+  // a year-only event set (ignoring department/unit) so the Department
+  // Summary section below - which has its own separate staff-category filter
+  // and isn't part of this department/unit filter's scope - keeps its prior
+  // behavior of only responding to the year filter.
   var filteredCpdData = [cpdData[0]]; // Keep headers
   var filteredEventIds = {};
+  var yearOnlyEventIds = {};
   for (var i = 1; i < cpdData.length; i++) {
-    if (cpdData[i][2]) {
-      var eventDate = new Date(cpdData[i][2]);
-      var eventYear = eventDate.getFullYear();
-      if (showAllYears || eventYear === selectedYear) {
-        filteredCpdData.push(cpdData[i]);
-        filteredEventIds[cpdData[i][0]] = true; // Store Event ID
-      }
-    }
+    if (!cpdData[i][2]) continue;
+    var eventDate = new Date(cpdData[i][2]);
+    var eventYear = eventDate.getFullYear();
+    if (!showAllYears && eventYear !== selectedYear) continue;
+    yearOnlyEventIds[cpdData[i][0]] = true;
+    if (filterDepartment && (cpdData[i][4] || '').toString().trim() !== filterDepartment) continue;
+    if (filterUnit && (cpdData[i][5] || '').toString().trim() !== filterUnit) continue;
+    filteredCpdData.push(cpdData[i]);
+    filteredEventIds[cpdData[i][0]] = true; // Store Event ID
   }
 
   // Filter registrations by filtered event IDs
   var filteredRegistrationData = [registrationData[0]]; // Keep headers
+  var yearOnlyRegistrationData = [registrationData[0]]; // Keep headers
   for (var i = 1; i < registrationData.length; i++) {
     var eventId = registrationData[i][2]; // Column C: Event ID
     if (filteredEventIds[eventId]) {
       filteredRegistrationData.push(registrationData[i]);
+    }
+    if (yearOnlyEventIds[eventId]) {
+      yearOnlyRegistrationData.push(registrationData[i]);
     }
   }
 
@@ -463,15 +490,28 @@ function getDashboardData(filterYear) {
   cpdData = filteredCpdData;
   registrationData = filteredRegistrationData;
 
+  // Staff roster filtered by the staff member's own Department/Unit, used only
+  // for the Total Staff / Avg CPD Hours KPIs - kept separate from the full
+  // listData so the Staff Distribution chart and Department Summary table
+  // (which have their own, independent staff-category filter) are unaffected.
+  var filteredListRows = [];
+  for (var i = 1; i < listData.length; i++) {
+    var staffDept = (listData[i][5] || '').toString().trim(); // Column F: Department
+    var staffUnit = (listData[i][6] || '').toString().trim(); // Column G: Unit
+    if (filterDepartment && staffDept !== filterDepartment) continue;
+    if (filterUnit && staffUnit !== filterUnit) continue;
+    filteredListRows.push(listData[i]);
+  }
+
   // Calculate Basic KPIs
-  var totalStaff = listData.length - 1;
+  var totalStaff = filteredListRows.length;
   var totalEvents = cpdData.length - 1;
   var totalRegistrations = registrationData.length - 1;
 
   // Calculate average CPD hours per staff
   var totalCPDHours = 0;
-  for (var i = 1; i < listData.length; i++) {
-    var hours = parseFloat(listData[i][11]) || 0;
+  for (var i = 0; i < filteredListRows.length; i++) {
+    var hours = parseFloat(filteredListRows[i][11]) || 0;
     totalCPDHours += hours;
   }
   var avgCPDHours = totalStaff > 0 ? (totalCPDHours / totalStaff).toFixed(2) : 0;
@@ -577,11 +617,14 @@ function getDashboardData(filterYear) {
   }
 
   // ===== DEPARTMENT SUMMARY TABLE =====
-  // Calculate unique participating staff per department
+  // Calculate unique participating staff per department. Uses
+  // yearOnlyRegistrationData (not the department/unit-filtered
+  // registrationData above) - this section isn't part of the department/unit
+  // filter's scope and keeps its prior year-only-filtered behavior.
   var participatingStaffByDept = {};
-  for (var i = 1; i < registrationData.length; i++) {
-    var staffId = registrationData[i][3]; // Column D: Staff ID
-    var dept = registrationData[i][6]; // Column G: Department
+  for (var i = 1; i < yearOnlyRegistrationData.length; i++) {
+    var staffId = yearOnlyRegistrationData[i][3]; // Column D: Staff ID
+    var dept = yearOnlyRegistrationData[i][6]; // Column G: Department
     if (staffId && dept) {
       if (!participatingStaffByDept[dept]) {
         participatingStaffByDept[dept] = {};
@@ -645,7 +688,13 @@ function getDashboardData(filterYear) {
       selectedYear: showAllYears ? 'All' : selectedYear,
       availableYears: yearsArray,
       currentYear: currentYear,
-      showAllYears: showAllYears
+      showAllYears: showAllYears,
+      selectedDepartment: filterDepartment || 'All',
+      showAllDepartments: !filterDepartment,
+      availableDepartments: availableDepartments,
+      selectedUnit: filterUnit || 'All',
+      showAllUnits: !filterUnit,
+      availableUnits: availableUnits
     }
   });
 }
