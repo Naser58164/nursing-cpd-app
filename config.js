@@ -3,7 +3,7 @@
 
 const CONFIG = {
     // 🔧 IMPORTANT: Replace this with your Google Apps Script deployment URL
-    API_URL: 'https://script.google.com/macros/s/AKfycbyH8HVC8yJA8ixHmgLDEYEP490J0Ou7mHblL24xt89D3ujOp-mcB-WosAShrX1cF1sTZg/exec',
+    API_URL: 'https://script.google.com/macros/s/AKfycbyopZj5Yn8qgrovXOc9DLcM5bVKtY830RSKfjNJaPjC1pz5cU0RtV-6TcHAd7IUzIqKRg/exec',
     
     // Application Settings
     APP_NAME: 'Nursing CPD Portal',
