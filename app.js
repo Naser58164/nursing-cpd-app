@@ -558,7 +558,7 @@ class NursingCPDApp {
     }
 
     // Dashboard
-    async loadDashboard(selectedYear = null) {
+    async loadDashboard(selectedYear = null, selectedDepartment = null, selectedUnit = null) {
         const loadingEl = document.getElementById('dashboard-loading');
         const contentEl = document.getElementById('dashboard-content');
 
@@ -571,43 +571,64 @@ class NursingCPDApp {
                 throw new Error('API URL not configured. Please update config.js with your Google Apps Script URL.');
             }
 
-            // Build URL with optional year parameter
+            // Build URL with optional year/department/unit parameters
             let url = `${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_DASHBOARD}`;
             if (selectedYear) {
                 url += `&year=${selectedYear}`;
             }
+            if (selectedDepartment) {
+                url += `&department=${encodeURIComponent(selectedDepartment)}`;
+            }
+            if (selectedUnit) {
+                url += `&unit=${encodeURIComponent(selectedUnit)}`;
+            }
 
             const response = await fetch(url);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
             console.log('Dashboard data received:', data); // Debug log
 
             if (data.success) {
-                // Populate year filter dropdown if not already done
+                // Populate filter dropdowns if not already done
                 if (data.filterInfo && data.filterInfo.availableYears) {
                     this.populateYearFilter(data.filterInfo);
                 }
-                
+                if (data.filterInfo && data.filterInfo.availableDepartments) {
+                    this.populateDepartmentFilter(data.filterInfo);
+                }
+                if (data.filterInfo && data.filterInfo.availableUnits) {
+                    this.populateUnitFilter(data.filterInfo);
+                }
+
                 // Update filter info display
                 if (data.filterInfo) {
-                    const infoEl = document.getElementById('year-filter-info');
+                    const infoEl = document.getElementById('dashboard-filter-info');
                     if (infoEl) {
+                        const parts = [];
+
                         if (data.filterInfo.showAllYears) {
-                            infoEl.innerHTML = `<i class="fas fa-globe"></i> Showing data for <strong>all years</strong> (${data.filterInfo.availableYears.join(', ')})`;
+                            parts.push(`all years (${data.filterInfo.availableYears.join(', ')})`);
                         } else {
                             const year = data.filterInfo.selectedYear;
                             const isCurrent = year === data.filterInfo.currentYear;
-                            infoEl.innerHTML = isCurrent ? 
-                                `<i class="fas fa-calendar-check"></i> Showing data for current year (<strong>${year}</strong>)` :
-                                `<i class="fas fa-filter"></i> Filtered by year: <strong>${year}</strong>`;
+                            parts.push(isCurrent ? `current year (<strong>${year}</strong>)` : `year <strong>${year}</strong>`);
                         }
+
+                        if (!data.filterInfo.showAllDepartments) {
+                            parts.push(`department <strong>${this.escapeHtml(data.filterInfo.selectedDepartment)}</strong>`);
+                        }
+                        if (!data.filterInfo.showAllUnits) {
+                            parts.push(`unit <strong>${this.escapeHtml(data.filterInfo.selectedUnit)}</strong>`);
+                        }
+
+                        infoEl.innerHTML = `<i class="fas fa-filter"></i> Showing data for ${parts.join(', ')}`;
                     }
                 }
-                
+
                 // Update KPIs
                 this.displayKPIs(data.kpis);
                 
@@ -669,20 +690,20 @@ class NursingCPDApp {
     populateYearFilter(filterInfo) {
         const yearSelect = document.getElementById('year-filter');
         if (!yearSelect) return;
-        
+
         // Only populate once
         if (yearSelect.options.length > 0) {
             // Update selected value
             yearSelect.value = filterInfo.selectedYear.toString();
             return;
         }
-        
+
         // Add "All Years" option
         const allOption = document.createElement('option');
         allOption.value = '';
         allOption.textContent = 'All Years';
         yearSelect.appendChild(allOption);
-        
+
         // Add year options
         filterInfo.availableYears.forEach(year => {
             const option = document.createElement('option');
@@ -695,25 +716,73 @@ class NursingCPDApp {
         });
     }
 
-    async filterDashboardByYear() {
-        const yearSelect = document.getElementById('year-filter');
-        if (!yearSelect) return;
+    populateDepartmentFilter(filterInfo) {
+        this.populateNameFilter('dashboard-department-filter', 'All Departments', filterInfo.availableDepartments, filterInfo.selectedDepartment);
+    }
 
-        const selectedYear = yearSelect.value;
-        console.log('Filtering dashboard by year:', selectedYear || 'All Years');
+    populateUnitFilter(filterInfo) {
+        this.populateNameFilter('dashboard-unit-filter', 'All Units', filterInfo.availableUnits, filterInfo.selectedUnit);
+    }
 
-        // Update info message immediately
-        const infoEl = document.getElementById('year-filter-info');
-        if (infoEl) {
-            if (selectedYear === '') {
-                infoEl.innerHTML = '<i class="fas fa-globe"></i> Showing data for <strong>all years</strong>';
-            } else {
-                infoEl.innerHTML = `<i class="fas fa-filter"></i> Filtering data for year: <strong>${selectedYear}</strong>`;
-            }
+    // Shared by populateDepartmentFilter/populateUnitFilter: fills a <select>
+    // with an "All ..." option plus one option per name, populating only once.
+    populateNameFilter(selectId, allLabel, names, selectedName) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+
+        // Only populate once
+        if (select.options.length > 0) {
+            select.value = (!selectedName || selectedName === 'All') ? '' : selectedName;
+            return;
         }
 
-        // Reload dashboard with selected year
-        await this.loadDashboard(selectedYear || null);
+        const allOption = document.createElement('option');
+        allOption.value = '';
+        allOption.textContent = allLabel;
+        select.appendChild(allOption);
+
+        names.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            if (name === selectedName) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    }
+
+    // Reads the Year/Department/Unit dropdowns and reloads the dashboard
+    // (KPIs, Events & Participation Analysis, Department & Unit Analysis
+    // charts) scoped to the current selection. Staff Distribution and
+    // Department Summary Report are intentionally not affected - the latter
+    // has its own separate staff-category filter, re-applied below.
+    async applyDashboardFilters() {
+        const yearSelect = document.getElementById('year-filter');
+        const deptSelect = document.getElementById('dashboard-department-filter');
+        const unitSelect = document.getElementById('dashboard-unit-filter');
+
+        const selectedYear = yearSelect ? yearSelect.value : '';
+        const selectedDepartment = deptSelect ? deptSelect.value : '';
+        const selectedUnit = unitSelect ? unitSelect.value : '';
+
+        console.log('Filtering dashboard by:', {
+            year: selectedYear || 'All Years',
+            department: selectedDepartment || 'All Departments',
+            unit: selectedUnit || 'All Units'
+        });
+
+        // Update info message immediately, before the fetch resolves
+        const infoEl = document.getElementById('dashboard-filter-info');
+        if (infoEl) {
+            const parts = [selectedYear ? `year <strong>${this.escapeHtml(selectedYear)}</strong>` : 'all years'];
+            if (selectedDepartment) parts.push(`department <strong>${this.escapeHtml(selectedDepartment)}</strong>`);
+            if (selectedUnit) parts.push(`unit <strong>${this.escapeHtml(selectedUnit)}</strong>`);
+            infoEl.innerHTML = `<i class="fas fa-filter"></i> Filtering data for ${parts.join(', ')}...`;
+        }
+
+        // Reload dashboard with the selected filters
+        await this.loadDashboard(selectedYear || null, selectedDepartment || null, selectedUnit || null);
 
         // loadDashboard() just redrew the summary table with all staff categories;
         // re-apply the staff-category filter (if the user has one active) on top of it.
