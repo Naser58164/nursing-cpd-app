@@ -598,10 +598,10 @@ class NursingCPDApp {
                     this.populateYearFilter(data.filterInfo);
                 }
                 if (data.filterInfo && data.filterInfo.availableDepartments) {
-                    this.populateDepartmentFilter(data.filterInfo);
+                    this.populateDashboardDepartmentFilter(data.filterInfo);
                 }
                 if (data.filterInfo && data.filterInfo.availableUnits) {
-                    this.populateUnitFilter(data.filterInfo);
+                    this.populateDashboardUnitFilter(data.filterInfo);
                 }
 
                 // Update filter info display
@@ -716,16 +716,17 @@ class NursingCPDApp {
         });
     }
 
-    populateDepartmentFilter(filterInfo) {
+    populateDashboardDepartmentFilter(filterInfo) {
         this.populateNameFilter('dashboard-department-filter', 'All Departments', filterInfo.availableDepartments, filterInfo.selectedDepartment);
     }
 
-    populateUnitFilter(filterInfo) {
+    populateDashboardUnitFilter(filterInfo) {
         this.populateNameFilter('dashboard-unit-filter', 'All Units', filterInfo.availableUnits, filterInfo.selectedUnit);
     }
 
-    // Shared by populateDepartmentFilter/populateUnitFilter: fills a <select>
-    // with an "All ..." option plus one option per name, populating only once.
+    // Shared by populateDashboardDepartmentFilter/populateDashboardUnitFilter:
+    // fills a <select> with an "All ..." option plus one option per name,
+    // populating only once.
     populateNameFilter(selectId, allLabel, names, selectedName) {
         const select = document.getElementById(selectId);
         if (!select) return;
