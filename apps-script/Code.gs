@@ -16,7 +16,7 @@ function doGet(e) {
       case 'getDashboardData':
         return getDashboardData(e.parameter.year, e.parameter.department, e.parameter.unit);
       case 'getDepartmentSummary':
-        return getDepartmentSummary(e.parameter.year, e.parameter.positions);
+        return getDepartmentSummary(e.parameter.year, e.parameter.positions, e.parameter.department, e.parameter.unit);
       case 'getStaffDetails':
         return getStaffDetails(e.parameter.staffId);
       case 'getStaffByDepartment':
@@ -452,48 +452,65 @@ function getDashboardData(filterYear, filterDepartment, filterUnit) {
   var availableDepartments = Object.keys(availableDepartmentsSet).sort();
   var availableUnits = Object.keys(availableUnitsSet).sort();
 
-  // Filter events by year and, if selected, by the event's own Department/Unit
-  // (CPD sheet Columns E/F) - mirrors the year filter's approach. Also track
-  // a year-only event set (ignoring department/unit) so the Department
-  // Summary section below - which has its own separate staff-category filter
-  // and isn't part of this department/unit filter's scope - keeps its prior
-  // behavior of only responding to the year filter.
-  var filteredCpdData = [cpdData[0]]; // Keep headers
-  var filteredEventIds = {};
-  var yearOnlyEventIds = {};
+  var hasDeptUnitFilter = !!(filterDepartment || filterUnit);
+
+  // Events in the selected year (or all years). This is the base set for
+  // everything event-related; department/unit narrowing happens below via
+  // the registrant's own Department/Unit, not the CPD sheet's per-event
+  // Department/Unit - those columns are often left blank/inconsistent when
+  // events aren't earmarked for one department, so filtering directly on
+  // them silently zeroed out almost everything once a department/unit was
+  // selected.
+  var yearFilteredCpdData = [cpdData[0]]; // Keep headers
+  var yearFilteredEventIds = {};
   for (var i = 1; i < cpdData.length; i++) {
     if (!cpdData[i][2]) continue;
-    var eventDate = new Date(cpdData[i][2]);
-    var eventYear = eventDate.getFullYear();
+    var eventYear = new Date(cpdData[i][2]).getFullYear();
     if (!showAllYears && eventYear !== selectedYear) continue;
-    yearOnlyEventIds[cpdData[i][0]] = true;
-    if (filterDepartment && (cpdData[i][4] || '').toString().trim() !== filterDepartment) continue;
-    if (filterUnit && (cpdData[i][5] || '').toString().trim() !== filterUnit) continue;
-    filteredCpdData.push(cpdData[i]);
-    filteredEventIds[cpdData[i][0]] = true; // Store Event ID
+    yearFilteredCpdData.push(cpdData[i]);
+    yearFilteredEventIds[cpdData[i][0]] = true;
   }
 
-  // Filter registrations by filtered event IDs
+  // Registrations for those events, further filtered by the REGISTRANT's own
+  // Department/Unit (registration sheet Columns G/H) - auto-filled from the
+  // List sheet at registration time, so reliably populated and consistent
+  // with the staff roster's own Department/Unit values.
   var filteredRegistrationData = [registrationData[0]]; // Keep headers
-  var yearOnlyRegistrationData = [registrationData[0]]; // Keep headers
   for (var i = 1; i < registrationData.length; i++) {
     var eventId = registrationData[i][2]; // Column C: Event ID
-    if (filteredEventIds[eventId]) {
-      filteredRegistrationData.push(registrationData[i]);
-    }
-    if (yearOnlyEventIds[eventId]) {
-      yearOnlyRegistrationData.push(registrationData[i]);
+    if (!yearFilteredEventIds[eventId]) continue;
+    var regDept = (registrationData[i][6] || '').toString().trim(); // Column G: Department
+    var regUnit = (registrationData[i][7] || '').toString().trim(); // Column H: Unit
+    if (filterDepartment && regDept !== filterDepartment) continue;
+    if (filterUnit && regUnit !== filterUnit) continue;
+    filteredRegistrationData.push(registrationData[i]);
+  }
+
+  // Events actually attended by the filtered registrants. With no
+  // department/unit filter, every event in the selected year counts
+  // (unchanged from before); with a filter, only events that had at least
+  // one registrant from that department/unit count - so Events Per Month /
+  // Total Events reflect the filter instead of staying blank or unfiltered.
+  var attendedEventIds = {};
+  for (var i = 1; i < filteredRegistrationData.length; i++) {
+    attendedEventIds[filteredRegistrationData[i][2]] = true;
+  }
+  var cpdDataForEvents = yearFilteredCpdData;
+  if (hasDeptUnitFilter) {
+    cpdDataForEvents = [cpdData[0]];
+    for (var i = 1; i < yearFilteredCpdData.length; i++) {
+      if (attendedEventIds[yearFilteredCpdData[i][0]]) cpdDataForEvents.push(yearFilteredCpdData[i]);
     }
   }
 
   // Use filtered data for calculations
-  cpdData = filteredCpdData;
+  cpdData = cpdDataForEvents;
   registrationData = filteredRegistrationData;
 
-  // Staff roster filtered by the staff member's own Department/Unit, used only
-  // for the Total Staff / Avg CPD Hours KPIs - kept separate from the full
-  // listData so the Staff Distribution chart and Department Summary table
-  // (which have their own, independent staff-category filter) are unaffected.
+  // Staff roster filtered by the staff member's own Department/Unit (List
+  // sheet Columns F/G) - drives Total Staff/Avg CPD Hours below, and also
+  // Staff Distribution / Department Summary further down, so every section
+  // reflects the same department/unit selection.
   var filteredListRows = [];
   for (var i = 1; i < listData.length; i++) {
     var staffDept = (listData[i][5] || '').toString().trim(); // Column F: Department
@@ -600,10 +617,12 @@ function getDashboardData(filterYear, filterDepartment, filterUnit) {
     unitParticipants.push(participantsByUnit[unit]);
   }
 
-  // ===== STAFF PER DEPARTMENT (from List sheet) =====
+  // ===== STAFF PER DEPARTMENT (Staff Distribution chart) =====
+  // Uses the department/unit-filtered staff roster, so this chart reflects
+  // the same selection as the rest of the dashboard.
   var staffPerDept = {};
-  for (var i = 1; i < listData.length; i++) {
-    var dept = listData[i][5]; // Column F: Department
+  for (var i = 0; i < filteredListRows.length; i++) {
+    var dept = filteredListRows[i][5]; // Column F: Department
     if (dept) {
       staffPerDept[dept] = (staffPerDept[dept] || 0) + 1;
     }
@@ -617,14 +636,14 @@ function getDashboardData(filterYear, filterDepartment, filterUnit) {
   }
 
   // ===== DEPARTMENT SUMMARY TABLE =====
-  // Calculate unique participating staff per department. Uses
-  // yearOnlyRegistrationData (not the department/unit-filtered
-  // registrationData above) - this section isn't part of the department/unit
-  // filter's scope and keeps its prior year-only-filtered behavior.
+  // Calculate unique participating staff per department, from the same
+  // year+department/unit-filtered registrationData used above. The separate
+  // staff-category filter (Nurse/MO/HCA) is layered on top of this via the
+  // dedicated getDepartmentSummary endpoint, not here.
   var participatingStaffByDept = {};
-  for (var i = 1; i < yearOnlyRegistrationData.length; i++) {
-    var staffId = yearOnlyRegistrationData[i][3]; // Column D: Staff ID
-    var dept = yearOnlyRegistrationData[i][6]; // Column G: Department
+  for (var i = 1; i < registrationData.length; i++) {
+    var staffId = registrationData[i][3]; // Column D: Staff ID
+    var dept = registrationData[i][6]; // Column G: Department
     if (staffId && dept) {
       if (!participatingStaffByDept[dept]) {
         participatingStaffByDept[dept] = {};
@@ -702,16 +721,18 @@ function getDashboardData(filterYear, filterDepartment, filterUnit) {
 /**
  * Get the Department Summary table only, optionally restricted to a set of
  * staff categories (Medical Orderly / Healthcare Assistant / Staff Nurse -
- * see getStaffCategory). Used by the Department Summary staff-category
+ * see getStaffCategory) AND/OR a Department/Unit (mirrors the dashboard's
+ * Department/Unit filter). Used by the Department Summary staff-category
  * filter so toggling it doesn't have to re-fetch and redraw the whole
- * dashboard (KPIs/charts).
+ * dashboard (KPIs/charts), while still respecting whatever Department/Unit
+ * is currently selected there.
  *
  * filterPositions: comma-separated category names (e.g. "Staff Nurse,HCA").
  * Omitted/empty means no filter - every staff member counts, including any
  * designation that doesn't map to a known category - matching the default
  * "show all" behavior of getDashboardData's departmentSummary.
  */
-function getDepartmentSummary(filterYear, filterPositions) {
+function getDepartmentSummary(filterYear, filterPositions, filterDepartment, filterUnit) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var listSheet = ss.getSheetByName('List');
   var registrationSheet = ss.getSheetByName('registration');
@@ -733,6 +754,9 @@ function getDepartmentSummary(filterYear, filterPositions) {
   var selectedYear = filterYear ? parseInt(filterYear) : currentYear;
   var showAllYears = !filterYear;
 
+  filterDepartment = filterDepartment ? filterDepartment.toString().trim() : '';
+  filterUnit = filterUnit ? filterUnit.toString().trim() : '';
+
   var filteredEventIds = {};
   for (var i = 1; i < cpdData.length; i++) {
     if (cpdData[i][2]) {
@@ -743,11 +767,16 @@ function getDepartmentSummary(filterYear, filterPositions) {
     }
   }
 
+  // Filter registrations by year and, if selected, by the REGISTRANT's own
+  // Department/Unit (Columns G/H) - same approach as getDashboardData.
   var filteredRegistrationData = [registrationData[0]];
   for (var i = 1; i < registrationData.length; i++) {
-    if (filteredEventIds[registrationData[i][2]]) {
-      filteredRegistrationData.push(registrationData[i]);
-    }
+    if (!filteredEventIds[registrationData[i][2]]) continue;
+    var regDept = (registrationData[i][6] || '').toString().trim();
+    var regUnit = (registrationData[i][7] || '').toString().trim();
+    if (filterDepartment && regDept !== filterDepartment) continue;
+    if (filterUnit && regUnit !== filterUnit) continue;
+    filteredRegistrationData.push(registrationData[i]);
   }
   registrationData = filteredRegistrationData;
 
@@ -766,17 +795,21 @@ function getDepartmentSummary(filterYear, filterPositions) {
     return !selectedCategories || selectedCategories[category] === true;
   }
 
-  // Staff ID -> category lookup (built once) and filtered staff-per-department counts
+  // Staff ID -> category lookup (built once) and filtered staff-per-department
+  // counts - staff must match both the category filter and the Department/Unit
+  // filter (their own List sheet Columns F/G).
   var staffCategoryById = {};
   var staffPerDept = {};
   for (var i = 1; i < listData.length; i++) {
     var staffId = listData[i][0];
     var dept = listData[i][5]; // Column F: Department
+    var unit = listData[i][6]; // Column G: Unit
     var category = getStaffCategory(listData[i][3]); // Column D: Designation
     if (staffId) staffCategoryById[staffId.toString()] = category;
-    if (dept && passesFilter(category)) {
-      staffPerDept[dept] = (staffPerDept[dept] || 0) + 1;
-    }
+    if (!dept || !passesFilter(category)) continue;
+    if (filterDepartment && dept.toString().trim() !== filterDepartment) continue;
+    if (filterUnit && (unit || '').toString().trim() !== filterUnit) continue;
+    staffPerDept[dept] = (staffPerDept[dept] || 0) + 1;
   }
 
   var participatingStaffByDept = {};

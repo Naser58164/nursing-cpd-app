@@ -842,10 +842,16 @@ class NursingCPDApp {
 
         try {
             const yearSelect = document.getElementById('year-filter');
+            const deptSelect = document.getElementById('dashboard-department-filter');
+            const unitSelect = document.getElementById('dashboard-unit-filter');
             const selectedYear = yearSelect ? yearSelect.value : '';
+            const selectedDepartment = deptSelect ? deptSelect.value : '';
+            const selectedUnit = unitSelect ? unitSelect.value : '';
 
             let url = `${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_DEPARTMENT_SUMMARY}`;
             if (selectedYear) url += `&year=${selectedYear}`;
+            if (selectedDepartment) url += `&department=${encodeURIComponent(selectedDepartment)}`;
+            if (selectedUnit) url += `&unit=${encodeURIComponent(selectedUnit)}`;
             // Omitting "positions" when every category is selected keeps the default
             // "show all staff" behavior exactly as before (including any designation
             // that doesn't map to a known category).
