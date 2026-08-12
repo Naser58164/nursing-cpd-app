@@ -603,6 +603,9 @@ class NursingCPDApp {
                 if (data.filterInfo && data.filterInfo.availableUnits) {
                     this.populateDashboardUnitFilter(data.filterInfo);
                 }
+                if (data.filterInfo) {
+                    this.populateCourseComplianceFilters(data.filterInfo);
+                }
 
                 // Update filter info display
                 if (data.filterInfo) {
@@ -871,6 +874,151 @@ class NursingCPDApp {
             console.error('Error loading department summary:', error);
             tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Failed to load data</td></tr>';
         }
+    }
+
+    // ===== Course Compliance report =====
+    // Independent of the main Year/Department/Unit filter bar and the
+    // Department Summary staff-category filter above - it has its own
+    // course/year-range picker and its own exclusion filters.
+
+    populateCourseComplianceFilters(filterInfo) {
+        // Unlike populateNameFilter (used by the main Year/Department/Unit
+        // filter bar), these selects have no filterInfo-tracked "selected"
+        // value to restore on repeat calls, so we populate options once and
+        // never touch .value afterwards - otherwise reloading the dashboard
+        // (e.g. changing the main Year/Department/Unit filter) would silently
+        // reset whatever course/year-range the user picked here.
+        this.populateSelectOnce('compliance-course-filter', 'Select a course...', filterInfo.availableCourses || []);
+        this.populateSelectOnce('compliance-year-from', 'Any', filterInfo.availableYears || []);
+        this.populateSelectOnce('compliance-year-to', 'Any', filterInfo.availableYears || []);
+        this.populateMultiSelect('compliance-exclude-departments', filterInfo.availableDepartments || []);
+        this.populateMultiSelect('compliance-exclude-units', filterInfo.availableUnits || []);
+    }
+
+    // Fills a <select> with a placeholder option plus one option per name,
+    // populating only once and never resetting the current selection on
+    // repeat calls (see populateCourseComplianceFilters).
+    populateSelectOnce(selectId, placeholderLabel, names) {
+        const select = document.getElementById(selectId);
+        if (!select || select.options.length > 0) return;
+
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = placeholderLabel;
+        select.appendChild(placeholderOption);
+
+        names.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            select.appendChild(option);
+        });
+    }
+
+    // Fills a <select multiple> with one option per name, populating only once.
+    populateMultiSelect(selectId, names) {
+        const select = document.getElementById(selectId);
+        if (!select || select.options.length > 0) return;
+
+        names.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            select.appendChild(option);
+        });
+    }
+
+    async applyCourseComplianceFilter() {
+        const courseSelect = document.getElementById('compliance-course-filter');
+        const course = courseSelect ? courseSelect.value : '';
+
+        const emptyStateEl = document.getElementById('compliance-empty-state');
+        const resultsEl = document.getElementById('compliance-results');
+
+        const excludeDepartments = Array.from(document.getElementById('compliance-exclude-departments')?.selectedOptions || []).map(o => o.value);
+        const excludeUnits = Array.from(document.getElementById('compliance-exclude-units')?.selectedOptions || []).map(o => o.value);
+        const excludeCategories = Array.from(document.querySelectorAll('.compliance-exclude-category:checked')).map(box => box.value);
+        const excludeAdmin = document.getElementById('compliance-exclude-admin')?.checked;
+
+        const labelEl = document.getElementById('compliance-exclude-label');
+        if (labelEl) {
+            const excludedCount = excludeDepartments.length + excludeUnits.length + excludeCategories.length + (excludeAdmin ? 1 : 0);
+            labelEl.textContent = excludedCount === 0 ? 'None' : `${excludedCount} active`;
+        }
+
+        if (!course) {
+            if (resultsEl) resultsEl.style.display = 'none';
+            if (emptyStateEl) {
+                emptyStateEl.style.display = 'block';
+                emptyStateEl.innerHTML = '<i class="fas fa-info-circle"></i> Select a course above to view compliance.';
+            }
+            return;
+        }
+
+        if (emptyStateEl) emptyStateEl.style.display = 'none';
+        if (resultsEl) resultsEl.style.display = 'block';
+
+        const tableBody = document.getElementById('complianceByDeptTable')?.querySelector('tbody');
+        if (tableBody) tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><span class="spinner-border spinner-border-sm"></span> Loading...</td></tr>';
+
+        try {
+            const yearFrom = document.getElementById('compliance-year-from')?.value || '';
+            const yearTo = document.getElementById('compliance-year-to')?.value || '';
+
+            let url = `${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_COURSE_COMPLIANCE}&course=${encodeURIComponent(course)}`;
+            if (yearFrom) url += `&yearFrom=${encodeURIComponent(yearFrom)}`;
+            if (yearTo) url += `&yearTo=${encodeURIComponent(yearTo)}`;
+            if (excludeDepartments.length) url += `&excludeDepartments=${encodeURIComponent(excludeDepartments.join(','))}`;
+            if (excludeUnits.length) url += `&excludeUnits=${encodeURIComponent(excludeUnits.join(','))}`;
+            if (excludeCategories.length) url += `&excludeCategories=${encodeURIComponent(excludeCategories.join(','))}`;
+            if (excludeAdmin) url += `&excludeAdmin=1`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.success) {
+                this.displayCourseCompliance(data);
+            } else if (tableBody) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">${this.escapeHtml(data.message || 'Failed to load data')}</td></tr>`;
+            }
+        } catch (error) {
+            console.error('Error loading course compliance:', error);
+            if (tableBody) tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load data</td></tr>';
+        }
+    }
+
+    displayCourseCompliance(data) {
+        const compliantEl = document.getElementById('compliance-kpi-compliant');
+        const nonCompliantEl = document.getElementById('compliance-kpi-noncompliant');
+        const rateEl = document.getElementById('compliance-kpi-rate');
+        if (compliantEl) compliantEl.textContent = data.compliance.compliant;
+        if (nonCompliantEl) nonCompliantEl.textContent = data.compliance.nonCompliant;
+        if (rateEl) rateEl.textContent = `${data.compliance.complianceRate}%`;
+
+        const tableBody = document.getElementById('complianceByDeptTable')?.querySelector('tbody');
+        if (!tableBody) return;
+
+        tableBody.innerHTML = '';
+
+        if (!data.complianceByDepartment || data.complianceByDepartment.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No data available</td></tr>';
+            return;
+        }
+
+        data.complianceByDepartment.forEach(dept => {
+            const row = document.createElement('tr');
+            const rateClass = dept.complianceRate >= 75 ? 'success' :
+                             dept.complianceRate >= 50 ? 'warning' : 'danger';
+
+            row.innerHTML = `
+                <td><strong>${this.escapeHtml(dept.department)}</strong></td>
+                <td>${dept.totalStaff}</td>
+                <td>${dept.compliant}</td>
+                <td>${dept.nonCompliant}</td>
+                <td><span class="badge bg-${rateClass}">${dept.complianceRate}%</span></td>
+            `;
+            tableBody.appendChild(row);
+        });
     }
 
     displayKPIs(kpis) {
