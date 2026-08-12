@@ -17,6 +17,9 @@ function doGet(e) {
         return getDashboardData(e.parameter.year, e.parameter.department, e.parameter.unit);
       case 'getDepartmentSummary':
         return getDepartmentSummary(e.parameter.year, e.parameter.positions, e.parameter.department, e.parameter.unit);
+      case 'getCourseCompliance':
+        return getCourseCompliance(e.parameter.course, e.parameter.yearFrom, e.parameter.yearTo,
+          e.parameter.excludeDepartments, e.parameter.excludeUnits, e.parameter.excludeCategories, e.parameter.excludeAdmin);
       case 'getStaffDetails':
         return getStaffDetails(e.parameter.staffId);
       case 'getStaffByDepartment':
@@ -452,6 +455,16 @@ function getDashboardData(filterYear, filterDepartment, filterUnit) {
   var availableDepartments = Object.keys(availableDepartmentsSet).sort();
   var availableUnits = Object.keys(availableUnitsSet).sort();
 
+  // Get available courses (Event Names, deduped across every year they've
+  // run) from the full CPD sheet, independent of any filter - drives the
+  // Course Compliance course picker.
+  var availableCoursesSet = {};
+  for (var i = 1; i < cpdData.length; i++) {
+    var courseName = (cpdData[i][1] || '').toString().trim(); // Column B: Event Name
+    if (courseName) availableCoursesSet[courseName] = true;
+  }
+  var availableCourses = Object.keys(availableCoursesSet).sort();
+
   var hasDeptUnitFilter = !!(filterDepartment || filterUnit);
 
   // Events in the selected year (or all years). This is the base set for
@@ -713,7 +726,8 @@ function getDashboardData(filterYear, filterDepartment, filterUnit) {
       availableDepartments: availableDepartments,
       selectedUnit: filterUnit || 'All',
       showAllUnits: !filterUnit,
-      availableUnits: availableUnits
+      availableUnits: availableUnits,
+      availableCourses: availableCourses
     }
   });
 }
@@ -846,6 +860,153 @@ function getDepartmentSummary(filterYear, filterPositions, filterDepartment, fil
   return createResponse({
     success: true,
     departmentSummary: departmentSummary
+  });
+}
+
+/**
+ * Course/Event compliance: for a course selected by Event Name (grouped
+ * across every year it has run - e.g. every "Basic Life Support" CPD event
+ * regardless of year counts as the same course), reports how many staff have
+ * attended it at least once (Compliant) vs never attended (Non-Compliant),
+ * optionally scoped to a year range and with staff excluded by Department,
+ * Unit, and/or role category.
+ *
+ * filterCourse: exact Event Name (CPD sheet Column B) to match, case/space
+ * insensitive.
+ * filterYearFrom/filterYearTo: optional inclusive year bounds on the Event
+ * Date (CPD sheet Column C). Omitted means no bound on that side.
+ * filterExcludeDepartments/filterExcludeUnits: comma-separated Department/Unit
+ * names (List sheet Columns F/G) to drop from the staff roster entirely.
+ * filterExcludeCategories: comma-separated staff-category names (see
+ * getStaffCategory) to drop from the roster.
+ * filterExcludeAdmin: truthy to additionally drop staff whose Designation
+ * doesn't map to a known category (the 'Other' bucket - e.g. admin/
+ * non-clinical staff).
+ */
+function getCourseCompliance(filterCourse, filterYearFrom, filterYearTo, filterExcludeDepartments, filterExcludeUnits, filterExcludeCategories, filterExcludeAdmin) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var listSheet = ss.getSheetByName('List');
+  var registrationSheet = ss.getSheetByName('registration');
+  var cpdSheet = ss.getSheetByName('CPD');
+
+  if (!listSheet || !registrationSheet || !cpdSheet) {
+    return createResponse({
+      success: false,
+      message: 'Required sheets not found. Please ensure CPD, registration, and List sheets exist.'
+    });
+  }
+
+  filterCourse = (filterCourse || '').toString().trim();
+  if (!filterCourse) {
+    return createResponse({ success: false, message: 'A course must be selected.' });
+  }
+
+  var listData = listSheet.getDataRange().getValues();
+  var registrationData = registrationSheet.getDataRange().getValues();
+  var cpdData = cpdSheet.getDataRange().getValues();
+
+  var yearFrom = filterYearFrom ? parseInt(filterYearFrom) : null;
+  var yearTo = filterYearTo ? parseInt(filterYearTo) : null;
+  var courseKey = filterCourse.toUpperCase();
+
+  // Event IDs for every run of the selected course (matched by Event Name,
+  // case-insensitive) within the optional year range.
+  var matchingEventIds = {};
+  for (var i = 1; i < cpdData.length; i++) {
+    var eventName = (cpdData[i][1] || '').toString().trim(); // Column B: Event Name
+    if (eventName.toUpperCase() !== courseKey) continue;
+    if (!cpdData[i][2]) continue; // Column C: Event Date
+    var eventYear = new Date(cpdData[i][2]).getFullYear();
+    if (yearFrom !== null && eventYear < yearFrom) continue;
+    if (yearTo !== null && eventYear > yearTo) continue;
+    matchingEventIds[cpdData[i][0]] = true;
+  }
+
+  // Staff who attended at least one matching run.
+  var compliantStaffIds = {};
+  for (var i = 1; i < registrationData.length; i++) {
+    var eventId = registrationData[i][2]; // Column C: Event ID
+    var staffId = registrationData[i][3]; // Column D: Staff ID
+    if (staffId && matchingEventIds[eventId]) {
+      compliantStaffIds[staffId.toString()] = true;
+    }
+  }
+
+  function toSet(csv) {
+    var set = {};
+    if (!csv) return set;
+    csv.toString().split(',').forEach(function(v) {
+      v = v.trim();
+      if (v) set[v] = true;
+    });
+    return set;
+  }
+  var excludeDepartments = toSet(filterExcludeDepartments);
+  var excludeUnits = toSet(filterExcludeUnits);
+  var excludeCategories = toSet(filterExcludeCategories);
+  var excludeAdmin = !!filterExcludeAdmin && filterExcludeAdmin !== '0' && filterExcludeAdmin !== 'false';
+
+  // Roster after exclusions, grouped by department.
+  var complianceByDept = {};
+  var totalStaff = 0;
+  var totalCompliant = 0;
+
+  for (var i = 1; i < listData.length; i++) {
+    var staffId = listData[i][0]; // Column A: Staff ID
+    var dept = (listData[i][5] || '').toString().trim(); // Column F: Department
+    var unit = (listData[i][6] || '').toString().trim(); // Column G: Unit
+    var category = getStaffCategory(listData[i][3]); // Column D: Designation
+
+    if (!staffId || !dept) continue;
+    if (excludeDepartments[dept]) continue;
+    if (unit && excludeUnits[unit]) continue;
+    if (excludeCategories[category]) continue;
+    if (excludeAdmin && category === 'Other') continue;
+
+    if (!complianceByDept[dept]) {
+      complianceByDept[dept] = { total: 0, compliant: 0 };
+    }
+    complianceByDept[dept].total++;
+    totalStaff++;
+
+    if (compliantStaffIds[staffId.toString()]) {
+      complianceByDept[dept].compliant++;
+      totalCompliant++;
+    }
+  }
+
+  var complianceByDepartment = [];
+  for (var dept in complianceByDept) {
+    var totalInDept = complianceByDept[dept].total;
+    var compliantInDept = complianceByDept[dept].compliant;
+    var nonCompliantInDept = totalInDept - compliantInDept;
+    var complianceRate = totalInDept > 0 ? ((compliantInDept / totalInDept) * 100).toFixed(1) : 0;
+
+    complianceByDepartment.push({
+      department: dept,
+      totalStaff: totalInDept,
+      compliant: compliantInDept,
+      nonCompliant: nonCompliantInDept,
+      complianceRate: parseFloat(complianceRate)
+    });
+  }
+
+  complianceByDepartment.sort(function(a, b) {
+    return a.complianceRate - b.complianceRate;
+  });
+
+  var overallRate = totalStaff > 0 ? ((totalCompliant / totalStaff) * 100).toFixed(1) : 0;
+
+  return createResponse({
+    success: true,
+    course: filterCourse,
+    compliance: {
+      totalStaff: totalStaff,
+      compliant: totalCompliant,
+      nonCompliant: totalStaff - totalCompliant,
+      complianceRate: parseFloat(overallRate)
+    },
+    complianceByDepartment: complianceByDepartment
   });
 }
 
