@@ -19,7 +19,8 @@ function doGet(e) {
         return getDepartmentSummary(e.parameter.year, e.parameter.positions, e.parameter.department, e.parameter.unit);
       case 'getCourseCompliance':
         return getCourseCompliance(e.parameter.course, e.parameter.yearFrom, e.parameter.yearTo,
-          e.parameter.excludeDepartments, e.parameter.excludeUnits, e.parameter.excludeCategories, e.parameter.excludeAdmin);
+          e.parameter.excludeDepartments, e.parameter.excludeUnits, e.parameter.excludeCategories, e.parameter.excludeAdmin,
+          e.parameter.expFrom, e.parameter.expTo);
       case 'getStaffDetails':
         return getStaffDetails(e.parameter.staffId);
       case 'getStaffByDepartment':
@@ -882,8 +883,13 @@ function getDepartmentSummary(filterYear, filterPositions, filterDepartment, fil
  * filterExcludeAdmin: truthy to additionally drop staff whose Designation
  * doesn't map to a known category (the 'Other' bucket - e.g. admin/
  * non-clinical staff).
+ * filterExpFrom/filterExpTo: optional inclusive bounds (in years) on the
+ * staff member's Years of Experience (List sheet Column H) - lets a report
+ * be scoped to a specific experience band, e.g. "5 to 10 years". Staff with
+ * a blank/non-numeric Years of Experience are dropped whenever either bound
+ * is set, since they can't be placed in the band.
  */
-function getCourseCompliance(filterCourse, filterYearFrom, filterYearTo, filterExcludeDepartments, filterExcludeUnits, filterExcludeCategories, filterExcludeAdmin) {
+function getCourseCompliance(filterCourse, filterYearFrom, filterYearTo, filterExcludeDepartments, filterExcludeUnits, filterExcludeCategories, filterExcludeAdmin, filterExpFrom, filterExpTo) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var listSheet = ss.getSheetByName('List');
   var registrationSheet = ss.getSheetByName('registration');
@@ -945,6 +951,8 @@ function getCourseCompliance(filterCourse, filterYearFrom, filterYearTo, filterE
   var excludeUnits = toSet(filterExcludeUnits);
   var excludeCategories = toSet(filterExcludeCategories);
   var excludeAdmin = !!filterExcludeAdmin && filterExcludeAdmin !== '0' && filterExcludeAdmin !== 'false';
+  var expFrom = (filterExpFrom !== undefined && filterExpFrom !== null && filterExpFrom !== '') ? parseFloat(filterExpFrom) : null;
+  var expTo = (filterExpTo !== undefined && filterExpTo !== null && filterExpTo !== '') ? parseFloat(filterExpTo) : null;
 
   // Roster after exclusions, grouped by department.
   var complianceByDept = {};
@@ -956,12 +964,18 @@ function getCourseCompliance(filterCourse, filterYearFrom, filterYearTo, filterE
     var dept = (listData[i][5] || '').toString().trim(); // Column F: Department
     var unit = (listData[i][6] || '').toString().trim(); // Column G: Unit
     var category = getStaffCategory(listData[i][3]); // Column D: Designation
+    var experience = parseFloat(listData[i][7]); // Column H: Years of Experience
 
     if (!staffId || !dept) continue;
     if (excludeDepartments[dept]) continue;
     if (unit && excludeUnits[unit]) continue;
     if (excludeCategories[category]) continue;
     if (excludeAdmin && category === 'Other') continue;
+    if (expFrom !== null || expTo !== null) {
+      if (isNaN(experience)) continue;
+      if (expFrom !== null && experience < expFrom) continue;
+      if (expTo !== null && experience > expTo) continue;
+    }
 
     if (!complianceByDept[dept]) {
       complianceByDept[dept] = { total: 0, compliant: 0 };
