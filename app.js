@@ -891,8 +891,8 @@ class NursingCPDApp {
         this.populateSelectOnce('compliance-course-filter', 'Select a course...', filterInfo.availableCourses || []);
         this.populateSelectOnce('compliance-year-from', 'Any', filterInfo.availableYears || []);
         this.populateSelectOnce('compliance-year-to', 'Any', filterInfo.availableYears || []);
-        this.populateMultiSelect('compliance-exclude-departments', filterInfo.availableDepartments || []);
-        this.populateMultiSelect('compliance-exclude-units', filterInfo.availableUnits || []);
+        this.populateCheckboxGroup('compliance-exclude-departments-list', filterInfo.availableDepartments || [], 'compliance-exclude-department');
+        this.populateCheckboxGroup('compliance-exclude-units-list', filterInfo.availableUnits || [], 'compliance-exclude-unit');
     }
 
     // Fills a <select> with a placeholder option plus one option per name,
@@ -915,17 +915,51 @@ class NursingCPDApp {
         });
     }
 
-    // Fills a <select multiple> with one option per name, populating only once.
-    populateMultiSelect(selectId, names) {
-        const select = document.getElementById(selectId);
-        if (!select || select.options.length > 0) return;
+    // Fills a container with one checkbox per name (so excluding several
+    // departments/units is a plain click each, no ctrl/cmd-click needed),
+    // populating only once.
+    populateCheckboxGroup(containerId, names, checkboxClass) {
+        const container = document.getElementById(containerId);
+        if (!container || container.children.length > 0) return;
 
-        names.forEach(name => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            select.appendChild(option);
+        if (names.length === 0) {
+            container.innerHTML = '<span class="text-muted small">None available</span>';
+            return;
+        }
+
+        names.forEach((name, index) => {
+            const id = `${checkboxClass}-${index}`;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'form-check';
+            wrapper.innerHTML = `
+                <input class="form-check-input ${checkboxClass}" type="checkbox" value="${this.escapeHtml(name)}" id="${id}" onchange="app.updateComplianceExclusionLabel()">
+                <label class="form-check-label small" for="${id}">${this.escapeHtml(name)}</label>
+            `;
+            container.appendChild(wrapper);
         });
+    }
+
+    // Bulk-checks or bulk-unchecks every checkbox in a compliance exclusion
+    // checkbox group (the "All"/"None" links above each list).
+    setCheckboxGroup(containerId, checked) {
+        document.querySelectorAll(`#${containerId} input[type="checkbox"]`).forEach(box => box.checked = checked);
+        this.updateComplianceExclusionLabel();
+    }
+
+    // Refreshes the "Exclusions" button label with a live count as checkboxes
+    // are toggled, without re-fetching (the user still has to hit Apply).
+    updateComplianceExclusionLabel() {
+        const labelEl = document.getElementById('compliance-exclude-label');
+        if (!labelEl) return;
+        const excludedCount = this.getCheckedValues('compliance-exclude-department').length
+            + this.getCheckedValues('compliance-exclude-unit').length
+            + this.getCheckedValues('compliance-exclude-category').length
+            + (document.getElementById('compliance-exclude-admin')?.checked ? 1 : 0);
+        labelEl.textContent = excludedCount === 0 ? 'None' : `${excludedCount} active`;
+    }
+
+    getCheckedValues(checkboxClass) {
+        return Array.from(document.querySelectorAll(`.${checkboxClass}:checked`)).map(box => box.value);
     }
 
     async applyCourseComplianceFilter() {
@@ -935,16 +969,12 @@ class NursingCPDApp {
         const emptyStateEl = document.getElementById('compliance-empty-state');
         const resultsEl = document.getElementById('compliance-results');
 
-        const excludeDepartments = Array.from(document.getElementById('compliance-exclude-departments')?.selectedOptions || []).map(o => o.value);
-        const excludeUnits = Array.from(document.getElementById('compliance-exclude-units')?.selectedOptions || []).map(o => o.value);
-        const excludeCategories = Array.from(document.querySelectorAll('.compliance-exclude-category:checked')).map(box => box.value);
+        const excludeDepartments = this.getCheckedValues('compliance-exclude-department');
+        const excludeUnits = this.getCheckedValues('compliance-exclude-unit');
+        const excludeCategories = this.getCheckedValues('compliance-exclude-category');
         const excludeAdmin = document.getElementById('compliance-exclude-admin')?.checked;
 
-        const labelEl = document.getElementById('compliance-exclude-label');
-        if (labelEl) {
-            const excludedCount = excludeDepartments.length + excludeUnits.length + excludeCategories.length + (excludeAdmin ? 1 : 0);
-            labelEl.textContent = excludedCount === 0 ? 'None' : `${excludedCount} active`;
-        }
+        this.updateComplianceExclusionLabel();
 
         if (!course) {
             if (resultsEl) resultsEl.style.display = 'none';
@@ -964,10 +994,14 @@ class NursingCPDApp {
         try {
             const yearFrom = document.getElementById('compliance-year-from')?.value || '';
             const yearTo = document.getElementById('compliance-year-to')?.value || '';
+            const expFrom = document.getElementById('compliance-exp-from')?.value || '';
+            const expTo = document.getElementById('compliance-exp-to')?.value || '';
 
             let url = `${CONFIG.API_URL}?action=${CONFIG.ENDPOINTS.GET_COURSE_COMPLIANCE}&course=${encodeURIComponent(course)}`;
             if (yearFrom) url += `&yearFrom=${encodeURIComponent(yearFrom)}`;
             if (yearTo) url += `&yearTo=${encodeURIComponent(yearTo)}`;
+            if (expFrom) url += `&expFrom=${encodeURIComponent(expFrom)}`;
+            if (expTo) url += `&expTo=${encodeURIComponent(expTo)}`;
             if (excludeDepartments.length) url += `&excludeDepartments=${encodeURIComponent(excludeDepartments.join(','))}`;
             if (excludeUnits.length) url += `&excludeUnits=${encodeURIComponent(excludeUnits.join(','))}`;
             if (excludeCategories.length) url += `&excludeCategories=${encodeURIComponent(excludeCategories.join(','))}`;

@@ -447,7 +447,15 @@
                                             <!-- Options will be populated dynamically -->
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
+                                        <label for="compliance-exp-from" class="form-label small mb-0 text-muted">Experience From (yrs)</label>
+                                        <input type="number" id="compliance-exp-from" class="form-control border-primary" min="0" step="1" placeholder="Min" onchange="app.applyCourseComplianceFilter()">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="compliance-exp-to" class="form-label small mb-0 text-muted">Experience To (yrs)</label>
+                                        <input type="number" id="compliance-exp-to" class="form-control border-primary" min="0" step="1" placeholder="Max" onchange="app.applyCourseComplianceFilter()">
+                                    </div>
+                                    <div class="col-md-2">
                                         <label class="form-label small mb-0 text-muted d-block">Exclusions</label>
                                         <div class="dropdown w-100">
                                             <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" id="compliance-exclude-btn"
@@ -455,17 +463,29 @@
                                                 <i class="fas fa-filter"></i> <span id="compliance-exclude-label">None</span>
                                             </button>
                                             <ul class="dropdown-menu p-3" id="compliance-exclude-menu" aria-labelledby="compliance-exclude-btn" style="min-width: 320px; max-height: 400px; overflow-y: auto;">
-                                                <li class="mb-1"><strong class="small text-muted">Exclude Departments</strong></li>
-                                                <li class="mb-2">
-                                                    <select id="compliance-exclude-departments" class="form-select form-select-sm" multiple size="4">
-                                                        <!-- Options will be populated dynamically -->
-                                                    </select>
+                                                <li class="mb-1 d-flex justify-content-between align-items-center">
+                                                    <strong class="small text-muted">Exclude Departments</strong>
+                                                    <span>
+                                                        <button class="btn btn-sm btn-link p-0 small" type="button" onclick="app.setCheckboxGroup('compliance-exclude-departments-list', true)">All</button> /
+                                                        <button class="btn btn-sm btn-link p-0 small" type="button" onclick="app.setCheckboxGroup('compliance-exclude-departments-list', false)">None</button>
+                                                    </span>
                                                 </li>
-                                                <li class="mb-1"><strong class="small text-muted">Exclude Units</strong></li>
                                                 <li class="mb-2">
-                                                    <select id="compliance-exclude-units" class="form-select form-select-sm" multiple size="4">
-                                                        <!-- Options will be populated dynamically -->
-                                                    </select>
+                                                    <div id="compliance-exclude-departments-list" class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                                                        <!-- Checkboxes populated dynamically -->
+                                                    </div>
+                                                </li>
+                                                <li class="mb-1 d-flex justify-content-between align-items-center">
+                                                    <strong class="small text-muted">Exclude Units</strong>
+                                                    <span>
+                                                        <button class="btn btn-sm btn-link p-0 small" type="button" onclick="app.setCheckboxGroup('compliance-exclude-units-list', true)">All</button> /
+                                                        <button class="btn btn-sm btn-link p-0 small" type="button" onclick="app.setCheckboxGroup('compliance-exclude-units-list', false)">None</button>
+                                                    </span>
+                                                </li>
+                                                <li class="mb-2">
+                                                    <div id="compliance-exclude-units-list" class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                                                        <!-- Checkboxes populated dynamically -->
+                                                    </div>
                                                 </li>
                                                 <li class="mb-1"><strong class="small text-muted">Exclude Role Categories</strong></li>
                                                 <li>
