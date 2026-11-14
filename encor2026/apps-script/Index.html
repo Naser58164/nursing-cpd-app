@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ENCOR 2026 Assessment</title>
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <header class="top" id="top" hidden>
+    <button class="iconbtn" id="backBtn" aria-label="Back" hidden>&larr;</button>
+    <div class="title"><b id="topTitle">ENCOR 2026</b><span id="topSub"></span></div>
+    <button class="badge-sync ok" id="syncBadge" aria-live="polite" title="Sync status">Saved to sheet</button>
+  </header>
+  <main id="app"><div class="center"><p class="muted">Loading…</p></div></main>
+  <div id="modalRoot"></div>
+  <div id="toastRoot" aria-live="polite"></div>
+
+  <!-- Chart.js pinned version from an allowed CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+  <script>
+    // Values injected by doGet() as pre-escaped JSON string literals.
+    var SERVER = { token: <?!= sessionTokenJs ?>, signinUrl: <?!= signinUrlJs ?> };
+  </script>
+  <?!= include('App'); ?>
+</body>
+</html>
