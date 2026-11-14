@@ -9,7 +9,7 @@
 var fs = require('fs'), path = require('path');
 var ROOT = path.join(__dirname, '..'), AS = path.join(ROOT, 'apps-script');
 var rd = function (p) { return fs.readFileSync(p, 'utf8'); };
-var chartLocal = path.relative(__dirname, path.join(ROOT, '..', 'vendor', 'chartjs', 'chart.umd.js'));
+var chartLocal = path.relative(__dirname, path.join(__dirname, 'vendor', 'chart.umd.js'));
 
 var server = [
   rd(path.join(ROOT, 'test', 'gas-mock.js')),
